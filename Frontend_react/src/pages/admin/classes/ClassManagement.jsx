@@ -16,7 +16,8 @@ import {
   Eye,
   Edit2,
   Trash2,
-  UserCheck
+  UserCheck,
+  GraduationCap
 } from 'lucide-react';
 
 export default function ClassManagement() {
@@ -296,8 +297,11 @@ export default function ClassManagement() {
     </div>
   );
 
+  const totalClasses = classes.length;
+  const totalStudents = classes.reduce((sum, c) => sum + (Number(c.total_students) || 0), 0);
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
       {notice && (
         <Notification
           type={notice.type}
@@ -305,6 +309,39 @@ export default function ClassManagement() {
           onClose={() => setNotice(null)}
         />
       )}
+
+      {/* KPI Cards Thống kê Lớp */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/90 shadow-sm flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+            <Users size={22} />
+          </div>
+          <div>
+            <div className="text-xs text-slate-500 font-medium">Tổng số lớp sinh hoạt</div>
+            <div className="text-2xl font-bold text-slate-900 mt-0.5">{totalClasses}</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/90 shadow-sm flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shrink-0">
+            <GraduationCap size={22} />
+          </div>
+          <div>
+            <div className="text-xs text-slate-500 font-medium">Tổng sinh viên trực thuộc</div>
+            <div className="text-2xl font-bold text-emerald-600 mt-0.5">{totalStudents}</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/90 shadow-sm flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center border border-slate-200 shrink-0">
+            <Building2 size={22} />
+          </div>
+          <div>
+            <div className="text-xs text-slate-500 font-medium">Khoa / Viện phụ trách</div>
+            <div className="text-2xl font-bold text-slate-900 mt-0.5">{faculties.length}</div>
+          </div>
+        </div>
+      </div>
 
       <DataView
         title="Quản lý Lớp sinh hoạt"
@@ -314,23 +351,23 @@ export default function ClassManagement() {
         renderListItem={renderListItem}
         renderBoxItem={renderBoxItem}
         loading={loading}
-        searchFields={['ten_lop', 'ma_lop', 'khoa_hoc', 'ten_khoa']}
+        searchKeys={['ten_lop', 'ma_lop', 'khoa_hoc', 'ten_khoa']}
         searchPlaceholder="Tìm kiếm lớp theo tên, mã lớp, khóa, khoa..."
-        actionButton={
+        actions={
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm hover:shadow"
+            className="inline-flex items-center gap-2 py-2 px-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm shadow-blue-600/20 transition-all cursor-pointer"
           >
-            <Plus size={16} /> Thêm Lớp mới
+            <Plus size={16} /> <span>Thêm Lớp Mới</span>
           </button>
         }
-        filterComponent={
+        filters={
           <select
             value={selectedFaculty}
             onChange={(e) => setSelectedFaculty(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer shadow-sm"
+            className="py-2 px-3 rounded-lg border border-slate-300 bg-white text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all cursor-pointer min-w-[200px]"
           >
-            <option value="all">Tất cả các khoa ({classes.length})</option>
+            <option value="all">Tất cả các khoa ({classes.length} lớp)</option>
             {faculties.map((f) => {
               const count = classes.filter((c) => String(c.khoa_id) === String(f.id)).length;
               return (
