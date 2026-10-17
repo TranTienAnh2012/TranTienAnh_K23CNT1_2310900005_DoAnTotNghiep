@@ -6,6 +6,7 @@ export const adminService = {
   // Users & Roles
   getUsers: () => api.get('/admin/users'),
   provisionUser: (data) => api.post('/admin/users/provision', data),
+  bulkProvisionUsers: (data) => api.post('/admin/users/bulk-provision', data),
   toggleUserActive: (id) => api.patch(`/admin/users/${id}/toggle-active`),
   resetUserPassword: (id, data) => api.patch(`/admin/users/${id}/reset-password`, data),
   updateUser: (id, data) => api.put(`/admin/users/${id}`, data),

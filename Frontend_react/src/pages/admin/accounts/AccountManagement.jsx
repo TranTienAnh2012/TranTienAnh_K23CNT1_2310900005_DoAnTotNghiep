@@ -26,7 +26,8 @@ import {
   ScanFace,
   Filter,
   Check,
-  Copy
+  Copy,
+  FileSpreadsheet
 } from 'lucide-react';
 
 export default function AccountManagement() {
@@ -44,6 +45,7 @@ export default function AccountManagement() {
 
   // Modals
   const [isProvisionOpen, setIsProvisionOpen] = useState(false);
+  const [provisionInitialMode, setProvisionInitialMode] = useState('single');
   const [detailAccount, setDetailAccount] = useState(null);
   const [editAccount, setEditAccount] = useState(null);
   const [deleteAccount, setDeleteAccount] = useState(null);
@@ -506,13 +508,29 @@ export default function AccountManagement() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsProvisionOpen(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl text-sm shadow-md shadow-blue-500/20 transition-all cursor-pointer shrink-0"
-        >
-          <UserPlus size={18} />
-          Cấp Tài khoản Mới
-        </button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={() => {
+              setProvisionInitialMode('bulk');
+              setIsProvisionOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold rounded-xl text-sm shadow-md shadow-emerald-600/20 transition-all cursor-pointer shrink-0"
+          >
+            <FileSpreadsheet size={17} />
+            <span>Import Excel Sinh viên</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setProvisionInitialMode('single');
+              setIsProvisionOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.99] text-white font-semibold rounded-xl text-sm shadow-md shadow-blue-500/20 transition-all cursor-pointer shrink-0"
+          >
+            <UserPlus size={17} />
+            <span>Cấp Tài khoản Mới</span>
+          </button>
+        </div>
       </div>
 
       {/* Thống kê Tổng quan (Stats Grid) */}
@@ -664,9 +682,10 @@ export default function AccountManagement() {
         renderBoxItem={renderBoxItem}
       />
 
-      {/* Modal Cấp Tài Khoản Mới */}
+      {/* Modal Cấp Tài Khoản Mới (Đơn lẻ & Import Excel) */}
       <AccountProvisionModal
         isOpen={isProvisionOpen}
+        initialMode={provisionInitialMode}
         onClose={() => setIsProvisionOpen(false)}
         onSuccess={() => {
           loadData();
