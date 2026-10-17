@@ -1,0 +1,125 @@
+SmartEdu_System/
+│
+├── .env                                    # <-- FILE .ENV DÙNG CHUNG (MySQL, JWT, GPS, AI Config)
+│
+├── Frontend_react/                         # 1. GIAO DIỆN NGƯỜI DÙNG (React + Vite)
+│   ├── public/
+│   ├── src/
+│   │   ├── assets/                         # Hình ảnh tĩnh, logo, CSS toàn cục
+│   │   ├── components/
+│   │   │   ├── layouts/                    # Khung giao diện riêng cho từng Role
+│   │   │   │   ├── AdminLayout.jsx
+│   │   │   │   ├── TeacherLayout.jsx
+│   │   │   │   └── StudentLayout.jsx
+│   │   │   ├── common/                     # Navbar, Sidebar, Modal, DataTable, Notification
+│   │   │   └── camera/
+│   │   │       └── WebcamGpsCapture.jsx    # Component bật Webcam chụp mặt + lấy tọa độ GPS
+│   │   │
+│   │   ├── pages/                          # <-- CHIA THƯ MỤC THEO ROLE (Đồng bộ 1-1 với Backend)
+│   │   │   ├── auth/
+│   │   │   │   └── LoginPage.jsx           # Trang đăng nhập tập trung
+│   │   │   ├── admin/                      # Màn hình của Role 'admin'
+│   │   │   │   ├── AdminDashboard.jsx
+│   │   │   │   ├── UserManagement.jsx      # Quản lý bảng users, giang_vien, sinh_vien
+│   │   │   │   ├── AcademicManagement.jsx  # Quản lý bảng khoa, lop, mon_hoc, hoc_ky
+│   │   │   │   ├── CourseManagement.jsx    # Quản lý bảng lop_hoc_phan, buoi_hoc
+│   │   │   │   └── ExamManagement.jsx      # Quản lý bảng ca_thi, sinh_vien_ca_thi
+│   │   │   ├── teacher/                    # Màn hình của Role 'teacher'
+│   │   │   │   ├── TeacherDashboard.jsx
+│   │   │   │   ├── TeachingSchedule.jsx    # Xem lop_hoc_phan & buoi_hoc được phân công
+│   │   │   │   ├── AttendanceManager.jsx   # Theo dõi & duyệt điểm danh (Manual_Override)
+│   │   │   │   └── ExamSupervision.jsx     # Giám sát check-in phòng thi (sinh_vien_ca_thi)
+│   │   │   └── student/                    # Màn hình của Role 'student'
+│   │   │       ├── StudentDashboard.jsx
+│   │   │       ├── FaceRegistration.jsx    # Chụp ảnh mẫu đăng ký khuôn mặt (face_embedding)
+│   │   │       ├── ClassCheckin.jsx        # Điểm danh buổi học bằng FaceAI + GPS
+│   │   │       └── ExamCheckin.jsx         # Check-in ca thi bằng FaceAI + GPS
+│   │   │
+│   │   ├── services/                       # Cấu hình Axios gọi API theo từng phân hệ Role
+│   │   │   ├── api.js                      # Axios instance (tự động đính kèm JWT Token)
+│   │   │   ├── authService.js              # Gọi /api/auth/*
+│   │   │   ├── adminService.js             # Gọi /api/admin/*
+│   │   │   ├── teacherService.js           # Gọi /api/teacher/*
+│   │   │   └── studentService.js           # Gọi /api/student/*
+│   │   │
+│   │   ├── hooks/
+│   │   │   ├── useAuth.js                  # Quản lý trạng thái đăng nhập & role
+│   │   │   ├── useWebcam.js                # Xử lý luồng video HTML5
+│   │   │   └── useGeolocation.js           # Lấy kinh độ, vĩ độ từ trình duyệt
+│   │   │
+│   │   ├── routes/
+│   │   │   ├── AppRoutes.jsx               # Cấu hình Router tổng
+│   │   │   └── ProtectedRoute.jsx          # Kiểm tra quyền truy cập theo user.role
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── .env                                # Chứa VITE_API_BASE_URL=http://localhost:5000/api
+│   └── package.json
+│
+├── Backend_nodejs/                         # 2. XỬ LÝ NGHIỆP VỤ & ĐIỀU PHỐI (Node.js + Express)
+│   ├── src/
+│   │   ├── config/
+│   │   │   ├── env.js                      # Đọc biến môi trường từ file SmartEdu_System/.env gốc
+│   │   │   └── db.js                       # Kết nối MySQL Pool (mysql2/promise)
+│   │   │
+│   │   ├── middlewares/                    # Dùng chung cho toàn bộ các nhánh Route
+│   │   │   ├── authMiddleware.js           # Xác thực JWT Token, gắn req.user
+│   │   │   ├── roleMiddleware.js           # Kiểm tra role ('admin', 'teacher', 'student')
+│   │   │   ├── uploadMiddleware.js         # Multer lưu ảnh vào thư mục uploads/
+│   │   │   └── errorMiddleware.js          # Bắt lỗi tập trung toàn hệ thống
+│   │   │
+│   │   ├── controllers/                    # <-- CHIA THƯ MỤC THEO TỪNG ROLE
+│   │   │   ├── auth/
+│   │   │   │   └── authController.js       # Đăng nhập, đổi mật khẩu, lấy profile (bảng users)
+│   │   │   ├── admin/                      # Xử lý nghiệp vụ dành riêng cho Admin
+│   │   │   │   ├── userController.js       # CRUD bảng users, sinh_vien, giang_vien
+│   │   │   │   ├── academicController.js   # CRUD bảng khoa, lop, mon_hoc, hoc_ky
+│   │   │   │   ├── courseController.js     # Tạo lop_hoc_phan, sinh lịch buoi_hoc
+│   │   │   │   └── examController.js       # Tạo ca_thi, xếp danh sách sinh_vien_ca_thi
+│   │   │   ├── teacher/                    # Xử lý nghiệp vụ dành riêng cho Giảng viên
+│   │   │   │   ├── scheduleController.js   # Xem lịch dạy, chi tiết buổi học của giảng viên
+│   │   │   │   ├── attendanceController.js # Xem điểm danh, cập nhật thủ công (Manual_Override)
+│   │   │   │   └── examController.js       # Xem danh sách thí sinh & trạng thái check-in ca thi
+│   │   │   └── student/                    # Xử lý nghiệp vụ dành riêng cho Sinh viên
+│   │   │       ├── profileController.js    # Xem thông tin cá nhân, cập nhật ảnh & face_embedding
+│   │   │       ├── attendanceController.js # Điểm danh buoi_hoc (kiểm tra GPS + gọi Face_ai)
+│   │   │       └── examController.js       # Check-in sinh_vien_ca_thi (kiểm tra GPS + gọi Face_ai)
+│   │   │
+│   │   ├── services/                       # <-- LOGIC DÙNG CHUNG (Tránh lặp code giữa các Role)
+│   │   │   ├── faceAiService.js            # Gửi HTTP request (axios + form-data) sang Face_ai (:8000)
+│   │   │   ├── gpsService.js               # Công thức Haversine tính khoảng cách tọa độ GPS
+│   │   │   └── sharedQueryService.js       # Các câu truy vấn SQL dùng chung (lấy thông tin buổi học, ca thi)
+│   │   │
+│   │   ├── routes/                         # <-- CHIA NHÁNH ROUTE THEO ROLE
+│   │   │   ├── index.js                    # Khóa quyền tổng cho /auth, /admin, /teacher, /student
+│   │   │   ├── authRoutes.js
+│   │   │   ├── admin/
+│   │   │   │   └── adminRoutes.js          # Các API của Admin
+│   │   │   ├── teacher/
+│   │   │   │   └── teacherRoutes.js        # Các API của Giảng viên
+│   │   │   └── student/
+│   │   │       └── studentRoutes.js        # Các API của Sinh viên
+│   │   │
+│   │   ├── uploads/                        # Lưu trữ file ảnh vật lý
+│   │   │   ├── avatars/                    # Ảnh gốc đăng ký mẫu (avatar_url)
+│   │   │   └── checkins/                   # Ảnh chụp lúc điểm danh/thi (captured_image_url)
+│   │   └── app.js                          # Khởi tạo Express Server
+│   └── package.json
+│
+└── Face_ai/                                # 3. XỬ LÝ NHẬN DIỆN KHUÔN MẶT (Python + FastAPI)
+    ├── app/
+    │   ├── api/
+    │   │   └── endpoints.py                # 2 API chính: POST /extract-embedding và POST /verify-face
+    │   ├── core/
+    │   │   ├── config.py                   # Dùng python-dotenv đọc biến từ SmartEdu_System/.env gốc
+    │   │   └── database.py                 # Kết nối MySQL qua PyMySQL để đọc/ghi cột face_embedding
+    │   ├── services/
+    │   │   ├── detector.py                 # OpenCV-headless + Pillow phát hiện & cắt vùng mặt
+    │   │   ├── embedder.py                 # ONNX Runtime chạy model trích xuất vector 512 chiều
+    │   │   └── matcher.py                  # Numpy tính Cosine Similarity (similarity_score)
+    │   ├── schemas/
+    │   │   └── face_schema.py              # Pydantic models định nghĩa dữ liệu Request/Response
+    │   └── main.py                         # Khởi chạy ứng dụng FastAPI với Uvicorn
+    ├── models_weights/                     # Lưu file model ONNX (VD: arcface_r100.onnx, det_10g.onnx)
+    ├── tests/
+    │   └── test_face_api.py                # Kiểm thử đơn vị các hàm nhận diện bằng Pytest
+    └── requirements.txt                    # fastapi, uvicorn, pydantic, python-multipart, numpy, pillow, opencv-python-headless, onnxruntime, requests, pymysql, python-dotenv, pytest
