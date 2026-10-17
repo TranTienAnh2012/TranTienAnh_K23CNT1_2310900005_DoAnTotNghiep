@@ -391,7 +391,7 @@ export default function SubjectManagement() {
   );
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
       {notice && (
         <Notification
           type={notice.type}
@@ -408,42 +408,21 @@ export default function SubjectManagement() {
         renderListItem={renderListItem}
         renderBoxItem={renderBoxItem}
         loading={loading}
-        searchFields={['ten_mon', 'ma_mon', 'ten_khoa']}
+        searchKeys={['ten_mon', 'ma_mon', 'ten_khoa']}
         searchPlaceholder="Tìm kiếm môn học theo tên, mã môn, khoa..."
-        actionButton={
+        actions={
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '9px 18px',
-              borderRadius: '8px',
-              border: 'none',
-              background: '#2563eb',
-              color: '#ffffff',
-              fontWeight: 600,
-              fontSize: '0.88rem',
-              cursor: 'pointer'
-            }}
+            className="inline-flex items-center gap-2 py-2 px-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm shadow-blue-600/20 transition-all cursor-pointer"
           >
-            <Plus size={16} /> Thêm Môn học mới
+            <Plus size={16} /> <span>Thêm Môn học mới</span>
           </button>
         }
-        filterComponent={
+        filters={
           <select
             value={selectedFaculty}
             onChange={(e) => setSelectedFaculty(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: '1px solid #cbd5e1',
-              background: '#ffffff',
-              fontSize: '0.88rem',
-              color: '#334155',
-              cursor: 'pointer',
-              outline: 'none'
-            }}
+            className="py-2 px-3 rounded-lg border border-slate-300 bg-white text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all cursor-pointer min-w-[180px]"
           >
             <option value="all">Tất cả các khoa ({subjects.length})</option>
             {faculties.map((f) => (
@@ -461,39 +440,39 @@ export default function SubjectManagement() {
         onClose={() => setIsCreateModalOpen(false)}
         title="Thêm Môn học mới vào CTĐT"
       >
-        <form onSubmit={handleCreateSubject} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleCreateSubject} className="space-y-4">
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-              Mã Môn học *
+            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+              Mã Môn học <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               required
-              placeholder="vd: IT302, AI201"
+              placeholder="VD: IT302, AI201"
               value={form.ma_mon}
-              onChange={(e) => setForm({ ...form, ma_mon: e.target.value })}
-              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+              onChange={(e) => setForm({ ...form, ma_mon: e.target.value.toUpperCase() })}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-mono text-slate-800 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-              Tên Môn học *
+            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+              Tên Môn học <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               required
-              placeholder="vd: Phát triển ứng dụng Web nâng cao"
+              placeholder="VD: Phát triển ứng dụng Web nâng cao"
               value={form.ten_mon}
               onChange={(e) => setForm({ ...form, ten_mon: e.target.value })}
-              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all font-medium"
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Số tín chỉ *
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                Số tín chỉ <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
@@ -503,13 +482,13 @@ export default function SubjectManagement() {
                 placeholder="Nhập số tín chỉ"
                 value={form.so_tin_chi}
                 onChange={(e) => setForm({ ...form, so_tin_chi: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Số buổi quy định *
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                Số buổi quy định <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
@@ -519,19 +498,19 @@ export default function SubjectManagement() {
                 placeholder="Nhập số buổi học"
                 value={form.so_buoi_hoc}
                 onChange={(e) => setForm({ ...form, so_buoi_hoc: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-              Khoa phụ trách *
+            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+              Khoa phụ trách <span className="text-rose-500">*</span>
             </label>
             <select
               value={form.khoa_id}
               onChange={(e) => setForm({ ...form, khoa_id: e.target.value })}
-              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all cursor-pointer"
             >
               {faculties.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -541,17 +520,17 @@ export default function SubjectManagement() {
             </select>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(false)}
-              style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontWeight: 600 }}
+              className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-colors shadow-xs"
             >
               Hủy
             </button>
             <button
               type="submit"
-              style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+              className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-blue-500/20 transition-all cursor-pointer"
             >
               Tạo Môn học
             </button>

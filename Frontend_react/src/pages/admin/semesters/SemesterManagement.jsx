@@ -353,26 +353,14 @@ export default function SemesterManagement() {
         renderListItem={renderListItem}
         renderBoxItem={renderBoxItem}
         loading={loading}
-        searchFields={['ten_hoc_ky', 'nam_hoc']}
+        searchKeys={['ten_hoc_ky', 'nam_hoc']}
         searchPlaceholder="Tìm kiếm học kỳ theo tên, năm học..."
-        actionButton={
+        actions={
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '9px 18px',
-              borderRadius: '8px',
-              border: 'none',
-              background: '#2563eb',
-              color: '#ffffff',
-              fontWeight: 600,
-              fontSize: '0.88rem',
-              cursor: 'pointer'
-            }}
+            className="inline-flex items-center gap-2 py-2 px-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm shadow-blue-600/20 transition-all cursor-pointer"
           >
-            <Plus size={16} /> Thêm Học kỳ mới
+            <Plus size={16} /> <span>Thêm Học kỳ mới</span>
           </button>
         }
       />
@@ -383,11 +371,11 @@ export default function SemesterManagement() {
         onClose={() => setIsCreateModalOpen(false)}
         title="Thêm Học kỳ đào tạo mới"
       >
-        <form onSubmit={handleCreateSemester} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px' }}>
+        <form onSubmit={handleCreateSemester} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Tên Học kỳ *
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Tên Học kỳ <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -395,12 +383,12 @@ export default function SemesterManagement() {
                 placeholder="vd: Học kỳ 1, Học kỳ Hè"
                 value={form.ten_hoc_ky}
                 onChange={(e) => setForm({ ...form, ten_hoc_ky: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800 placeholder-slate-400"
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Năm học *
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Năm học <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -408,49 +396,49 @@ export default function SemesterManagement() {
                 placeholder="vd: 2024-2025"
                 value={form.nam_hoc}
                 onChange={(e) => setForm({ ...form, nam_hoc: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800 placeholder-slate-400"
               />
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Ngày bắt đầu *
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Ngày bắt đầu <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
                 required
                 value={form.ngay_bat_dau}
                 onChange={(e) => setForm({ ...form, ngay_bat_dau: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800"
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Ngày kết thúc *
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Ngày kết thúc <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
                 required
                 value={form.ngay_ket_thuc}
                 onChange={(e) => setForm({ ...form, ngay_ket_thuc: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800"
               />
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(false)}
-              style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontWeight: 600 }}
+              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
-              style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+              className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.99] rounded-lg shadow-sm shadow-blue-600/20 transition-all cursor-pointer"
             >
               Tạo Học kỳ
             </button>

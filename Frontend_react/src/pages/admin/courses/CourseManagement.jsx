@@ -628,45 +628,21 @@ export default function CourseManagement() {
         columns={columns}
         renderListItem={renderListItem}
         renderBoxItem={renderBoxItem}
-        searchFields={['ten_lhp', 'ma_lhp', 'ten_mon', 'ten_giang_vien']}
+        searchKeys={['ten_lhp', 'ma_lhp', 'ten_mon', 'ten_giang_vien']}
         searchPlaceholder="Tìm kiếm lớp học phần theo tên, mã, môn học..."
-        actionButton={
-          <div style={{ display: 'flex', gap: '10px' }}>
+        actions={
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => navigate('/admin/schedules')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '9px 16px',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                background: '#ffffff',
-                color: '#334155',
-                fontWeight: 600,
-                fontSize: '0.88rem',
-                cursor: 'pointer'
-              }}
+              className="inline-flex items-center gap-2 py-2 px-3.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-lg shadow-sm transition-all cursor-pointer"
             >
-              <Calendar size={16} style={{ color: '#2563eb' }} /> Bảng Lịch học & Buổi học →
+              <Calendar size={16} className="text-blue-600" /> <span>Bảng Lịch học & Buổi học →</span>
             </button>
             <button
               onClick={() => setIsCourseModalOpen(true)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '9px 18px',
-                borderRadius: '8px',
-                border: 'none',
-                background: '#2563eb',
-                color: '#ffffff',
-                fontWeight: 600,
-                fontSize: '0.88rem',
-                cursor: 'pointer'
-              }}
+              className="inline-flex items-center gap-2 py-2 px-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm shadow-blue-600/20 transition-all cursor-pointer"
             >
-              <Plus size={16} /> Mở Lớp học phần mới
+              <Plus size={16} /> <span>Mở Lớp học phần mới</span>
             </button>
           </div>
         }
@@ -962,10 +938,10 @@ export default function CourseManagement() {
         onClose={() => setIsCourseModalOpen(false)}
         title="Mở Lớp học phần mới"
       >
-        <form onSubmit={handleCreateCourse} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleCreateCourse} className="space-y-4">
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-              Mã Lớp học phần *
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Mã Lớp học phần <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -973,13 +949,13 @@ export default function CourseManagement() {
               placeholder="vd: LHP_IT302_01"
               value={courseForm.ma_lhp}
               onChange={(e) => setCourseForm({ ...courseForm, ma_lhp: e.target.value })}
-              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800 placeholder-slate-400"
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-              Tên Lớp học phần *
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Tên Lớp học phần <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -987,19 +963,19 @@ export default function CourseManagement() {
               placeholder="vd: Lập trình Web nâng cao (Lớp 01)"
               value={courseForm.ten_lhp}
               onChange={(e) => setCourseForm({ ...courseForm, ten_lhp: e.target.value })}
-              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800 placeholder-slate-400"
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Môn học *
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Môn học <span className="text-red-500">*</span>
               </label>
               <select
                 value={courseForm.mon_hoc_id}
                 onChange={(e) => setCourseForm({ ...courseForm, mon_hoc_id: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800"
               >
                 {subjects.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -1010,13 +986,13 @@ export default function CourseManagement() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Học kỳ *
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Học kỳ <span className="text-red-500">*</span>
               </label>
               <select
                 value={courseForm.hoc_ky_id}
                 onChange={(e) => setCourseForm({ ...courseForm, hoc_ky_id: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800"
               >
                 {semesters.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -1027,15 +1003,15 @@ export default function CourseManagement() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                 Giảng viên phụ trách
               </label>
               <select
                 value={courseForm.giang_vien_id}
                 onChange={(e) => setCourseForm({ ...courseForm, giang_vien_id: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800"
               >
                 {teachers.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -1046,7 +1022,7 @@ export default function CourseManagement() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                 Phòng học mặc định
               </label>
               <input
@@ -1054,22 +1030,22 @@ export default function CourseManagement() {
                 placeholder="vd: P.502 - Nhà A1"
                 value={courseForm.phong_hoc_mac_dinh}
                 onChange={(e) => setCourseForm({ ...courseForm, phong_hoc_mac_dinh: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800 placeholder-slate-400"
               />
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setIsCourseModalOpen(false)}
-              style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontWeight: 600 }}
+              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
-              style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+              className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.99] rounded-lg shadow-sm shadow-blue-600/20 transition-all cursor-pointer"
             >
               Tạo Lớp học phần
             </button>
