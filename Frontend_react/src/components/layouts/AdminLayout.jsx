@@ -5,9 +5,9 @@ import Navbar from '../common/Navbar';
 
 export default function AdminLayout() {
   return (
-    <div className="flex min-h-screen bg-slate-50 w-full overflow-x-hidden">
+    <div className="flex h-screen bg-slate-50 w-full overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <Navbar />
         <main className="flex-1 p-6 overflow-y-auto">
           <Outlet />

@@ -37,7 +37,7 @@ export default function Navbar() {
   const displayName = user?.profile?.ho_ten || user?.username || 'Người dùng';
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+    <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm shrink-0">
       <div className="flex items-center gap-4">
         <h2 className="text-base font-bold text-slate-800 tracking-tight">
           SmartEdu Management

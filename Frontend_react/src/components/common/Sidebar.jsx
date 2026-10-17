@@ -73,7 +73,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 select-none min-h-screen">
+    <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 select-none h-screen sticky top-0 overflow-hidden">
       {/* Brand Logo Header */}
       <div className="p-5 border-b border-slate-800/80 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
