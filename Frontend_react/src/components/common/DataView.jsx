@@ -8,14 +8,14 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 /**
- * DataView Component - Hỗ trợ 3 chế độ xem đa năng (Table, List, Box) kèm Phân trang tích hợp:
- * 1. 'table' : Bảng dữ liệu chuẩn (Table View)
- * 2. 'list'  : Danh sách thẻ dòng ngang (Row / List View)
- * 3. 'box'   : Lưới thẻ hộp hiện đại (Box / Grid View)
+ * DataView Component - Hỗ trợ 3 chế độ xem đa năng (Table, List, Box),
+ * tính năng Ẩn / Xem thêm (giới hạn 3 dòng ban đầu) và Phân trang chuẩn 10 dòng/trang.
  */
 export default function DataView({
   columns = [],
@@ -30,12 +30,16 @@ export default function DataView({
   actions = null, // Nút thao tác bổ sung trên thanh toolbar (vd: Nút Thêm mới)
   filters = null, // Dropdown lọc bổ sung
   stats = null,   // Thống kê nhanh tóm tắt
-  pageSize = 10,  // Số lượng phần tử trên mỗi trang mặc định
+  pageSize = 10,  // Số lượng phần tử trên mỗi trang khi đã xem thêm (mặc định 10)
   pageSizeOptions = [10, 20, 50, 100], // Tùy chọn số lượng trên mỗi trang
-  enablePagination = true // Bật / tắt phân trang
+  enablePagination = true, // Bật / tắt phân trang
+  enableExpandCollapse = true, // Bật tính năng Ẩn / Xem thêm (3 dòng ban đầu)
+  initialLimit = 3, // Giới hạn hiển thị 3 dữ liệu đầu tiên khi thu gọn
+  defaultExpanded = false // Trạng thái mở rộng ban đầu (mặc định false: chỉ hiện 3 dòng)
 }) {
   const [viewMode, setViewMode] = useState(defaultView);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(pageSize);
 
@@ -62,19 +66,24 @@ export default function DataView({
     setCurrentPage(1);
   }, [searchTerm, data.length]);
 
-  // 2. Tính toán phân trang
   const totalItems = filteredData.length;
+  const isCollapsedMode = enableExpandCollapse && !isExpanded && totalItems > initialLimit;
+
+  // 2. Tính toán phân trang
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
   const validPage = Math.min(Math.max(1, currentPage), totalPages);
 
   const startIndex = (validPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
 
-  // Dữ liệu hiển thị trên trang hiện tại
+  // Dữ liệu hiển thị: Nếu đang thu gọn -> chỉ lấy 3 dòng đầu; Nếu đã xem thêm -> phân trang 10 dòng
   const displayData = useMemo(() => {
+    if (isCollapsedMode) {
+      return filteredData.slice(0, initialLimit);
+    }
     if (!enablePagination) return filteredData;
     return filteredData.slice(startIndex, endIndex);
-  }, [filteredData, enablePagination, startIndex, endIndex]);
+  }, [filteredData, isCollapsedMode, initialLimit, enablePagination, startIndex, endIndex]);
 
   // Tạo danh sách số trang thông minh với dấu ba chấm '...'
   const pageNumbers = useMemo(() => {
@@ -128,9 +137,45 @@ export default function DataView({
           {/* Custom Filters (Dropdowns) */}
           {filters}
 
-          <span className="text-xs text-slate-500 font-medium whitespace-nowrap hidden sm:inline">
-            Tìm thấy <b className="text-slate-800 font-semibold">{totalItems}</b> / {data.length} bản ghi
-          </span>
+          {/* Quick status & Toggle button */}
+          <div className="flex items-center gap-2 text-xs">
+            {isCollapsedMode ? (
+              <span className="text-slate-500 font-medium whitespace-nowrap hidden sm:inline">
+                Đang xem <b className="text-slate-800 font-bold">{Math.min(initialLimit, totalItems)}</b> / {totalItems} bản ghi
+              </span>
+            ) : (
+              <span className="text-slate-500 font-medium whitespace-nowrap hidden sm:inline">
+                Đang xem <b className="text-slate-800 font-bold">{startIndex + 1} - {endIndex}</b> / {totalItems} bản ghi
+              </span>
+            )}
+
+            {enableExpandCollapse && totalItems > initialLimit && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExpanded(!isExpanded);
+                  if (isExpanded) setCurrentPage(1);
+                }}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  isExpanded
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80'
+                }`}
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronUp size={13} />
+                    <span>Ẩn bớt (3 dòng)</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={13} />
+                    <span>Xem thêm</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Right: View Switcher (Table / List / Box) + Actions Button */}
@@ -230,6 +275,23 @@ export default function DataView({
               </tbody>
             </table>
           </div>
+
+          {/* Thanh Xem thêm khi đang ở chế độ thu gọn 3 dòng */}
+          {isCollapsedMode && (
+            <div className="p-3 bg-slate-50/90 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+              <span className="text-slate-500">
+                Hiển thị <b className="text-slate-800 font-bold">{Math.min(initialLimit, totalItems)}</b> trong tổng số <b className="text-slate-800 font-bold">{totalItems}</b> bản ghi
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsExpanded(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold rounded-lg shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                <span>Xem thêm danh sách ({totalItems - initialLimit} bản ghi khác)</span>
+                <ChevronDown size={15} />
+              </button>
+            </div>
+          )}
         </div>
       ) : viewMode === 'list' ? (
         /* MODE 2: ROW / LIST VIEW */
@@ -270,55 +332,91 @@ export default function DataView({
               </div>
             );
           })}
+
+          {/* Nút Xem thêm khi List View đang thu gọn */}
+          {isCollapsedMode && (
+            <div className="p-3 bg-white rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 shadow-sm">
+              <span className="text-slate-500">
+                Hiển thị <b className="text-slate-800 font-bold">{Math.min(initialLimit, totalItems)}</b> trong tổng số <b className="text-slate-800 font-bold">{totalItems}</b> bản ghi
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsExpanded(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold rounded-lg shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                <span>Xem thêm danh sách ({totalItems - initialLimit} bản ghi khác)</span>
+                <ChevronDown size={15} />
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         /* MODE 3: BOX / GRID VIEW */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {displayData.map((item, idx) => {
-            if (renderBoxItem) {
-              return <React.Fragment key={item[keyField] || idx}>{renderBoxItem(item)}</React.Fragment>;
-            }
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {displayData.map((item, idx) => {
+              if (renderBoxItem) {
+                return <React.Fragment key={item[keyField] || idx}>{renderBoxItem(item)}</React.Fragment>;
+              }
 
-            // Fallback generic card box renderer
-            return (
-              <div
-                key={item[keyField] || idx}
-                className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between gap-3.5 shadow-sm hover:border-blue-400 hover:-translate-y-0.5 hover:shadow-md transition-all duration-150"
+              // Fallback generic card box renderer
+              return (
+                <div
+                  key={item[keyField] || idx}
+                  className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between gap-3.5 shadow-sm hover:border-blue-400 hover:-translate-y-0.5 hover:shadow-md transition-all duration-150"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-base flex-shrink-0 border border-blue-100">
+                      {String(item.ten || item.ho_ten || item.ma || item.id || '#').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-bold text-slate-900 truncate">
+                        {item.ho_ten || item.ten_khoa || item.ten_lop || item.ten_mon || item.ten_hoc_ky || item.username}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        {item.ma_sv || item.ma_gv || item.ma_khoa || item.ma_lop || item.ma_mon || `ID: ${item.id}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-slate-600 flex flex-col gap-1 border-t border-slate-100 pt-2.5">
+                    {item.email && <div className="truncate">Email: <b className="text-slate-800">{item.email}</b></div>}
+                    {item.khoa_ten && <div className="truncate">Khoa: <b className="text-slate-800">{item.khoa_ten}</b></div>}
+                    {item.lop_ten && <div className="truncate">Lớp: <b className="text-slate-800">{item.lop_ten}</b></div>}
+                    {item.so_tin_chi && <div>Số tín chỉ: <b className="text-slate-800">{item.so_tin_chi} TC</b></div>}
+                  </div>
+
+                  <div className="flex justify-end gap-2 border-t border-slate-100 pt-2.5">
+                    {columns.slice(-1).map((col, cIdx) => (
+                      <div key={cIdx}>{col.render ? col.render(item) : item[col.accessor]}</div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Nút Xem thêm khi Box View đang thu gọn */}
+          {isCollapsedMode && (
+            <div className="p-3 bg-white rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 shadow-sm">
+              <span className="text-slate-500">
+                Hiển thị <b className="text-slate-800 font-bold">{Math.min(initialLimit, totalItems)}</b> trong tổng số <b className="text-slate-800 font-bold">{totalItems}</b> bản ghi
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsExpanded(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold rounded-lg shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-base flex-shrink-0 border border-blue-100">
-                    {String(item.ten || item.ho_ten || item.ma || item.id || '#').charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-bold text-slate-900 truncate">
-                      {item.ho_ten || item.ten_khoa || item.ten_lop || item.ten_mon || item.ten_hoc_ky || item.username}
-                    </div>
-                    <div className="text-xs text-slate-500 mt-0.5">
-                      {item.ma_sv || item.ma_gv || item.ma_khoa || item.ma_lop || item.ma_mon || `ID: ${item.id}`}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-xs text-slate-600 flex flex-col gap-1 border-t border-slate-100 pt-2.5">
-                  {item.email && <div className="truncate">Email: <b className="text-slate-800">{item.email}</b></div>}
-                  {item.khoa_ten && <div className="truncate">Khoa: <b className="text-slate-800">{item.khoa_ten}</b></div>}
-                  {item.lop_ten && <div className="truncate">Lớp: <b className="text-slate-800">{item.lop_ten}</b></div>}
-                  {item.so_tin_chi && <div>Số tín chỉ: <b className="text-slate-800">{item.so_tin_chi} TC</b></div>}
-                </div>
-
-                <div className="flex justify-end gap-2 border-t border-slate-100 pt-2.5">
-                  {columns.slice(-1).map((col, cIdx) => (
-                    <div key={cIdx}>{col.render ? col.render(item) : item[col.accessor]}</div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+                <span>Xem thêm danh sách ({totalItems - initialLimit} bản ghi khác)</span>
+                <ChevronDown size={15} />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* 4. Pagination Footer Bar */}
-      {enablePagination && totalItems > 0 && (
+      {/* 4. Pagination Footer Bar (Hiển thị khi đã bấm Xem thêm và có phân trang) */}
+      {!isCollapsedMode && enablePagination && totalItems > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3.5 bg-white p-3.5 sm:px-5 rounded-xl border border-slate-200/90 shadow-sm text-xs text-slate-600">
           {/* Left: Số dòng trên mỗi trang & Thông tin hiển thị */}
           <div className="flex items-center gap-3 flex-wrap">
@@ -348,6 +446,22 @@ export default function DataView({
               <b className="text-slate-800 font-semibold">{endIndex}</b> /{' '}
               <b className="text-slate-800 font-semibold">{totalItems}</b> bản ghi
             </span>
+
+            {/* Nút Ẩn / Thu gọn về 3 dòng */}
+            {enableExpandCollapse && totalItems > initialLimit && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  setCurrentPage(1);
+                }}
+                title="Thu gọn lại chỉ hiển thị 3 dữ liệu đầu tiên"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-all cursor-pointer ml-1"
+              >
+                <ChevronUp size={14} />
+                <span>Ẩn bớt (3 dòng)</span>
+              </button>
+            )}
           </div>
 
           {/* Right: Nút điều hướng số trang */}
