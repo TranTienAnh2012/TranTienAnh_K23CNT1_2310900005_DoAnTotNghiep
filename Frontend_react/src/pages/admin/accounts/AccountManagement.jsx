@@ -675,6 +675,8 @@ export default function AccountManagement() {
         data={filteredUsers}
         columns={columns}
         loading={loading}
+        pageSize={10}
+        pageSizeOptions={[10, 20, 50, 100]}
         searchPlaceholder="Tìm kiếm theo Tên tài khoản, Họ tên, Mã SV/GV, Email..."
         searchKeys={['username', 'ho_ten', 'ma_dinh_danh', 'email', 'ten_khoa', 'ten_lop']}
         defaultView="table"

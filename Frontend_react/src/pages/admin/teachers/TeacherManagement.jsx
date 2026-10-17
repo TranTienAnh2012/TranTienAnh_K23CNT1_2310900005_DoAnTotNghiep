@@ -362,6 +362,8 @@ export default function TeacherManagement() {
         renderListItem={renderListItem}
         renderBoxItem={renderBoxItem}
         loading={loading}
+        pageSize={10}
+        pageSizeOptions={[10, 20, 50, 100]}
         searchKeys={['ho_ten', 'ma_gv', 'email', 'ten_khoa']}
         searchPlaceholder="Tìm kiếm giảng viên theo tên, mã GV, khoa..."
         actions={

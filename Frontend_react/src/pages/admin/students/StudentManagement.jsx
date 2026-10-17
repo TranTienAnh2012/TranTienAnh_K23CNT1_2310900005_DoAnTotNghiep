@@ -461,6 +461,8 @@ export default function StudentManagement() {
         renderListItem={renderListItem}
         renderBoxItem={renderBoxItem}
         loading={loading}
+        pageSize={10}
+        pageSizeOptions={[10, 20, 50, 100]}
         searchKeys={['ho_ten', 'ma_sv', 'email', 'ten_lop', 'ten_khoa']}
         searchPlaceholder="Tìm kiếm sinh viên theo tên, mã SV, email, lớp, khoa..."
         actions={
