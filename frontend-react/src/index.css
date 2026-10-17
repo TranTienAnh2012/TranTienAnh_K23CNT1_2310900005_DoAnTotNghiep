@@ -1,0 +1,335 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-color: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --accent-color: #175b9f;
+  --accent-hover: #124a82;
+  --success-color: #10b981;
+  --error-color: #ef4444;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+input, select, textarea {
+  color: #0f172a;
+}
+
+option {
+  color: #0f172a;
+  background-color: #ffffff;
+}
+
+table {
+  color: #1e293b;
+}
+
+/* ════════════════════════════════════════════════════════════════ */
+/* High-contrast fixes for inputs, selects, options & light modals */
+/* ════════════════════════════════════════════════════════════════ */
+input, select, textarea {
+  color: #0f172a;
+}
+
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1;
+}
+
+select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Light background containers must override dark body text color */
+.bg-white, .bg-gray-50, .bg-slate-50, .bg-gray-100, .bg-slate-100 {
+  color: #0f172a;
+}
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  width: 100%;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #175b9f;
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+}
+
+.webcam-container {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.webcam-video {
+  width: 100%;
+  display: block;
+}
+
+.webcam-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  z-index: 10;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: var(--accent-color);
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+  transform: scale(1.05);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
+}
+
+.btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.input-group {
+  margin-bottom: 1.5rem;
+  max-width: 400px;
+  margin: 0 auto 1.5rem auto;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background-color: #ffffff;
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+.status-success {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: var(--success-color);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.status-error {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: var(--error-color);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.loader {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ════════════════════════════════════════════════════════════════ */
+/* Custom Image Background & Glass Floating Depth System             */
+/* ════════════════════════════════════════════════════════════════ */
+
+/* Custom Image Background using pexels-codioful-7134995.jpg */
+.bg-canvas-pattern,
+.bg-app-image {
+  background-color: #f1f5f9;
+  background-image: 
+    linear-gradient(to bottom, rgba(248, 250, 252, 0.72), rgba(241, 245, 249, 0.82)),
+    url('/bg-app.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+body {
+  background-image: 
+    linear-gradient(to bottom, rgba(248, 250, 252, 0.72), rgba(241, 245, 249, 0.82)),
+    url('/bg-app.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+/* Glassmorphism Floating Card Depth System */
+.card-floating, .card-elevated {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  border-radius: 1.25rem;
+  box-shadow: 
+    0 20px 40px -12px rgba(15, 23, 42, 0.1),
+    0 8px 16px -4px rgba(23, 91, 159, 0.08),
+    inset 0 1px 0 0 rgba(255, 255, 255, 1);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+}
+
+.card-floating:hover, .card-elevated:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 28px 50px -14px rgba(23, 91, 159, 0.18),
+    0 12px 24px -6px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 0 rgba(255, 255, 255, 1);
+  border-color: rgba(23, 91, 159, 0.35) !important;
+}
+
+/* Automatic elevation depth for standard Tailwind white card containers */
+.bg-white.rounded-xl, 
+.bg-white.rounded-2xl,
+.bg-white.rounded-3xl,
+.bg-white.rounded-lg.shadow-sm,
+.bg-white.rounded-xl.shadow-sm,
+.bg-white.rounded-2xl.shadow-sm,
+.bg-white.rounded-2xl.shadow-md {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 
+    0 15px 35px -8px rgba(15, 23, 42, 0.09),
+    0 6px 14px -3px rgba(23, 91, 159, 0.06),
+    inset 0 1px 0 0 rgba(255, 255, 255, 1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.bg-white.rounded-xl:hover, 
+.bg-white.rounded-2xl:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 22px 42px -10px rgba(23, 91, 159, 0.14),
+    0 8px 18px -4px rgba(15, 23, 42, 0.06) !important;
+  border-color: rgba(23, 91, 159, 0.3) !important;
+}
+
+/* Glass Header & Sidebar Styling */
+aside.bg-white {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  box-shadow: 4px 0 24px 0 rgba(15, 23, 42, 0.06) !important;
+}
+
+header.bg-white {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  box-shadow: 0 4px 20px 0 rgba(15, 23, 42, 0.05) !important;
+}
+
