@@ -11,6 +11,7 @@ router.get('/dashboard/stats', userController.getDashboardStats);
 // 2. Quản lý Tài khoản (Users)
 router.get('/users', userController.getAllUsers);
 router.post('/users/provision', userController.provisionAccount);
+router.post('/users/bulk-provision', userController.bulkProvisionAccounts);
 router.patch('/users/:id/toggle-active', userController.toggleUserActive);
 router.patch('/users/:id/reset-password', userController.resetPassword);
 router.put('/users/:id', userController.updateUser);

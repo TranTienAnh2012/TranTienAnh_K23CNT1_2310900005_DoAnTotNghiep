@@ -205,6 +205,189 @@ const userController = {
     }
   },
 
+  async bulkProvisionAccounts(req, res) {
+    try {
+      const { students = [], default_lop_id } = req.body;
+
+      if (!Array.isArray(students) || students.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Danh sách sinh viên tải lên rỗng hoặc không đúng định dạng.'
+        });
+      }
+
+      // Pre-cache classes: key by ma_lop uppercase and id
+      const [allClasses] = await pool.query('SELECT id, ma_lop, ten_lop, khoa_id FROM lop WHERE is_deleted = FALSE');
+      const classByCode = new Map();
+      const classById = new Map();
+      allClasses.forEach((c) => {
+        if (c.ma_lop) classByCode.set(c.ma_lop.trim().toUpperCase(), c);
+        classById.set(c.id, c);
+      });
+
+      const successList = [];
+      const failedList = [];
+
+      // Salt for bcrypt
+      const salt = await bcrypt.genSalt(10);
+      const cachedPasswordHashes = new Map();
+
+      for (let i = 0; i < students.length; i++) {
+        const item = students[i];
+        const rowIdx = i + 1;
+        const ma_sv = item.ma_sv ? String(item.ma_sv).trim() : '';
+        const ho_ten = item.ho_ten ? String(item.ho_ten).trim() : '';
+        const rawMaLop = item.ma_lop ? String(item.ma_lop).trim().toUpperCase() : '';
+
+        if (!ma_sv || !ho_ten) {
+          failedList.push({
+            row: rowIdx,
+            ma_sv: ma_sv || '(Trống)',
+            ho_ten: ho_ten || '(Trống)',
+            reason: 'Thiếu Mã sinh viên (MSSV) hoặc Họ và tên.'
+          });
+          continue;
+        }
+
+        // Tìm lớp phù hợp (ưu tiên theo mã lớp trong file -> mã lớp id -> lớp mặc định)
+        let targetClass = null;
+        if (rawMaLop && classByCode.has(rawMaLop)) {
+          targetClass = classByCode.get(rawMaLop);
+        } else if (item.lop_id && classById.has(Number(item.lop_id))) {
+          targetClass = classById.get(Number(item.lop_id));
+        } else if (default_lop_id && classById.has(Number(default_lop_id))) {
+          targetClass = classById.get(Number(default_lop_id));
+        }
+
+        if (!targetClass) {
+          failedList.push({
+            row: rowIdx,
+            ma_sv,
+            ho_ten,
+            reason: rawMaLop
+              ? `Không tìm thấy mã lớp "${rawMaLop}" trên hệ thống.`
+              : 'Chưa chọn lớp mặc định hoặc mã lớp không hợp lệ.'
+          });
+          continue;
+        }
+
+        const lopId = targetClass.id;
+        const username = item.username ? String(item.username).trim().toLowerCase() : ma_sv.toLowerCase();
+        const rawPassword = item.password ? String(item.password).trim() : '123456';
+        const email = item.email && String(item.email).trim()
+          ? String(item.email).trim()
+          : `${username}@smartedu.edu.vn`;
+
+        let gioiTinh = 'Nam';
+        if (item.gioi_tinh) {
+          const gt = String(item.gioi_tinh).trim().toLowerCase();
+          if (gt === 'nu' || gt === 'nữ' || gt === 'female') {
+            gioiTinh = 'Nu';
+          } else if (gt === 'khac' || gt === 'khác') {
+            gioiTinh = 'Khac';
+          }
+        }
+
+        let ngaySinh = '2005-01-01';
+        if (item.ngay_sinh) {
+          try {
+            const parsed = new Date(item.ngay_sinh);
+            if (!isNaN(parsed.getTime())) {
+              ngaySinh = parsed.toISOString().split('T')[0];
+            }
+          } catch {
+            ngaySinh = '2005-01-01';
+          }
+        }
+
+        const connection = await pool.getConnection();
+        try {
+          await connection.beginTransaction();
+
+          // 1. Kiểm tra username trong users
+          const [existUser] = await connection.execute(
+            'SELECT id FROM users WHERE username = ? AND is_deleted = FALSE',
+            [username]
+          );
+          if (existUser.length > 0) {
+            throw new Error(`Tài khoản "${username}" đã tồn tại trên hệ thống.`);
+          }
+
+          // 2. Kiểm tra sinh viên trong bảng sinh_vien
+          const [existSv] = await connection.execute(
+            'SELECT id, user_id FROM sinh_vien WHERE ma_sv = ? AND is_deleted = FALSE',
+            [ma_sv]
+          );
+          if (existSv.length > 0 && existSv[0].user_id) {
+            throw new Error(`Sinh viên mã "${ma_sv}" đã được liên kết tài khoản trước đó.`);
+          }
+
+          // 3. Hash mật khẩu (cache để tăng tốc xử lý cho danh sách lớn)
+          let passwordHash = cachedPasswordHashes.get(rawPassword);
+          if (!passwordHash) {
+            passwordHash = await bcrypt.hash(rawPassword, salt);
+            cachedPasswordHashes.set(rawPassword, passwordHash);
+          }
+
+          // 4. Tạo User
+          const [userRes] = await connection.execute(
+            'INSERT INTO users (username, password_hash, role) VALUES (?, ?, "student")',
+            [username, passwordHash]
+          );
+          const userId = userRes.insertId;
+
+          // 5. Cập nhật hoặc Thêm mới sinh_vien
+          if (existSv.length > 0) {
+            await connection.execute(
+              'UPDATE sinh_vien SET user_id = ?, lop_id = ?, email = COALESCE(?, email) WHERE id = ?',
+              [userId, lopId, email, existSv[0].id]
+            );
+          } else {
+            await connection.execute(
+              'INSERT INTO sinh_vien (user_id, ma_sv, ho_ten, ngay_sinh, gioi_tinh, email, lop_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+              [userId, ma_sv, ho_ten, ngaySinh, gioiTinh, email, lopId]
+            );
+          }
+
+          await connection.commit();
+          successList.push({
+            row: rowIdx,
+            ma_sv,
+            ho_ten,
+            username,
+            password: rawPassword,
+            ten_lop: targetClass.ten_lop,
+            ma_lop: targetClass.ma_lop
+          });
+        } catch (err) {
+          await connection.rollback();
+          failedList.push({
+            row: rowIdx,
+            ma_sv,
+            ho_ten,
+            reason: err.message
+          });
+        } finally {
+          connection.release();
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: `Cấp tài khoản hoàn tất: ${successList.length} thành công, ${failedList.length} thất bại.`,
+        summary: {
+          total: students.length,
+          successCount: successList.length,
+          failedCount: failedList.length
+        },
+        successList,
+        failedList
+      });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Lỗi cấp tài khoản hàng loạt: ' + error.message });
+    }
+  },
+
   async toggleUserActive(req, res) {
     try {
       const { id } = req.params;
