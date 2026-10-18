@@ -509,7 +509,7 @@ export default function AccountManagement() {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <button
+          {/* <button
             onClick={() => {
               setProvisionInitialMode('bulk');
               setIsProvisionOpen(true);
@@ -518,7 +518,7 @@ export default function AccountManagement() {
           >
             <FileSpreadsheet size={17} />
             <span>Import Excel Sinh viên</span>
-          </button>
+          </button> */}
 
           <button
             onClick={() => {

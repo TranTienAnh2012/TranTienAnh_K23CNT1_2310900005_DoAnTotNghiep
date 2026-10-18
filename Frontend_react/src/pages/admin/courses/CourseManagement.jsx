@@ -31,6 +31,7 @@ export default function CourseManagement() {
   const [subjects, setSubjects] = useState([]);
   const [semesters, setSemesters] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [faculties, setFaculties] = useState([]);
   const [notice, setNotice] = useState(null);
 
   // Selected course for sessions / students view
@@ -46,6 +47,7 @@ export default function CourseManagement() {
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [classes, setClasses] = useState([]);
   const [enrollMode, setEnrollMode] = useState('by_class'); // 'by_class' | 'individual'
+  const [enrollFacultyId, setEnrollFacultyId] = useState('');
   const [selectedClassId, setSelectedClassId] = useState('');
   const [enrollStudentId, setEnrollStudentId] = useState('');
 
@@ -61,7 +63,10 @@ export default function CourseManagement() {
     mon_hoc_id: '',
     hoc_ky_id: '',
     giang_vien_id: '',
-    phong_hoc_mac_dinh: ''
+    phong_hoc_mac_dinh: '',
+    enable_auto_enroll: false,
+    khoa_id: '',
+    lop_id: ''
   });
 
   const [sessionForm, setSessionForm] = useState({
@@ -73,15 +78,17 @@ export default function CourseManagement() {
 
   const loadData = async () => {
     try {
-      const [cRes, sRes, semRes, tRes, stRes, clRes] = await Promise.all([
+      const [cRes, sRes, semRes, tRes, stRes, clRes, fRes] = await Promise.all([
         adminService.getCourses(),
         adminService.getSubjects(),
         adminService.getSemesters(),
         adminService.getTeachers(),
         adminService.getStudents(),
-        adminService.getClasses()
+        adminService.getClasses(),
+        adminService.getFaculties()
       ]);
       if (cRes.success) setCourses(cRes.data);
+      if (fRes && fRes.success) setFaculties(fRes.data);
       if (sRes.success) {
         setSubjects(sRes.data);
         if (sRes.data.length > 0 && !courseForm.mon_hoc_id) {
@@ -199,10 +206,29 @@ export default function CourseManagement() {
   const handleCreateCourse = async (e) => {
     e.preventDefault();
     try {
-      const res = await adminService.createCourse(courseForm);
+      const payload = {
+        ma_lhp: courseForm.ma_lhp,
+        ten_lhp: courseForm.ten_lhp,
+        mon_hoc_id: courseForm.mon_hoc_id,
+        hoc_ky_id: courseForm.hoc_ky_id,
+        giang_vien_id: courseForm.giang_vien_id,
+        phong_hoc_mac_dinh: courseForm.phong_hoc_mac_dinh,
+        lop_id: courseForm.enable_auto_enroll && courseForm.lop_id ? courseForm.lop_id : null
+      };
+
+      const res = await adminService.createCourse(payload);
       if (res.success) {
         setNotice({ type: 'success', message: res.message });
         setIsCourseModalOpen(false);
+        setCourseForm((p) => ({
+          ...p,
+          ma_lhp: '',
+          ten_lhp: '',
+          phong_hoc_mac_dinh: '',
+          enable_auto_enroll: false,
+          khoa_id: '',
+          lop_id: ''
+        }));
         loadData();
       }
     } catch (err) {
@@ -351,6 +377,19 @@ export default function CourseManagement() {
       render: (row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
+            onClick={() => {
+              setSelectedCourse(row);
+              setActiveTab('students');
+              handleSelectCourse(row);
+              setIsEnrollModalOpen(true);
+            }}
+            title="Thêm / Ghi danh sinh viên vào lớp học phần này"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+          >
+            <UserPlus size={13} />
+            <span>+ Thêm SV</span>
+          </button>
+          <button
             onClick={() => navigate(`/admin/schedules?courseId=${row.id}`)}
             title="Mở bảng Lịch học & Buổi học của lớp này"
             style={{
@@ -453,6 +492,19 @@ export default function CourseManagement() {
         </span>
 
         <div style={{ display: 'flex', gap: '6px' }}>
+          <button
+            onClick={() => {
+              setSelectedCourse(item);
+              setActiveTab('students');
+              handleSelectCourse(item);
+              setIsEnrollModalOpen(true);
+            }}
+            title="Thêm sinh viên vào LHP"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+          >
+            <UserPlus size={13} />
+            <span>+ Thêm SV</span>
+          </button>
           <button
             onClick={() => handleSelectCourse(item)}
             style={{
@@ -565,27 +617,43 @@ export default function CourseManagement() {
           borderTop: '1px solid #f1f5f9',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          gap: '8px'
         }}
       >
-        <button
-          onClick={() => navigate(`/admin/schedules?courseId=${item.id}`)}
-          style={{
-            border: 'none',
-            background: '#eff6ff',
-            color: '#2563eb',
-            padding: '5px 10px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.78rem',
-            fontWeight: 600,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px'
-          }}
-        >
-          <Calendar size={13} /> Lịch học →
-        </button>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button
+            onClick={() => {
+              setSelectedCourse(item);
+              setActiveTab('students');
+              handleSelectCourse(item);
+              setIsEnrollModalOpen(true);
+            }}
+            title="Thêm sinh viên vào LHP"
+            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+          >
+            <UserPlus size={12} />
+            <span>+ SV</span>
+          </button>
+          <button
+            onClick={() => navigate(`/admin/schedules?courseId=${item.id}`)}
+            style={{
+              border: 'none',
+              background: '#eff6ff',
+              color: '#2563eb',
+              padding: '5px 10px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <Calendar size={13} /> Lịch học →
+          </button>
+        </div>
 
         <div style={{ display: 'flex', gap: '4px' }}>
           <button
@@ -1035,6 +1103,105 @@ export default function CourseManagement() {
             </div>
           </div>
 
+          {/* Tùy chọn: Thêm sinh viên vào LHP ngay khi tạo (Chọn Khoa -> Chọn Lớp) */}
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={courseForm.enable_auto_enroll}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setCourseForm((p) => ({
+                      ...p,
+                      enable_auto_enroll: checked,
+                      khoa_id: checked ? (p.khoa_id || '') : '',
+                      lop_id: checked ? p.lop_id : ''
+                    }));
+                  }}
+                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                />
+                <span className="text-xs sm:text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                  <UserPlus size={15} className="text-blue-600" />
+                  Thêm sinh viên vào Lớp học phần ngay lúc này
+                </span>
+              </label>
+              <span className="text-[11px] font-semibold px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-md">
+                Khuyên dùng
+              </span>
+            </div>
+
+            {courseForm.enable_auto_enroll && (
+              <div className="space-y-3 pt-3 border-t border-slate-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      1. Chọn Khoa / Viện
+                    </label>
+                    <select
+                      value={courseForm.khoa_id}
+                      onChange={(e) => {
+                        const newKhoaId = e.target.value;
+                        setCourseForm((p) => ({ ...p, khoa_id: newKhoaId, lop_id: '' }));
+                      }}
+                      className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-800"
+                    >
+                      <option value="">-- Tất cả các Khoa --</option>
+                      {faculties.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.ten_khoa} ({f.ma_khoa})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      2. Chọn Lớp sinh hoạt <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={courseForm.lop_id}
+                      onChange={(e) => setCourseForm((p) => ({ ...p, lop_id: e.target.value }))}
+                      required={courseForm.enable_auto_enroll}
+                      className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-800"
+                    >
+                      <option value="">-- Chọn lớp cần thêm sinh viên --</option>
+                      {classes
+                        .filter((c) => !courseForm.khoa_id || String(c.khoa_id) === String(courseForm.khoa_id))
+                        .map((c) => {
+                          const countInClass = allStudents.filter((st) => String(st.lop_id) === String(c.id)).length;
+                          return (
+                            <option key={c.id} value={c.id}>
+                              {c.ma_lop} - {c.ten_lop} ({countInClass} SV)
+                            </option>
+                          );
+                        })}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Thông tin xem trước lớp sinh hoạt */}
+                {courseForm.lop_id && (() => {
+                  const selectedClass = classes.find((c) => String(c.id) === String(courseForm.lop_id));
+                  const studentsCount = allStudents.filter((st) => String(st.lop_id) === String(courseForm.lop_id)).length;
+                  return (
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-200/80 rounded-lg flex items-center justify-between text-xs text-emerald-800">
+                      <div className="flex items-center gap-2">
+                        <Users size={16} className="text-emerald-600 shrink-0" />
+                        <span>
+                          Lớp <strong>{selectedClass?.ten_lop}</strong> ({selectedClass?.ma_lop}) hiện có <strong>{studentsCount} sinh viên</strong>.
+                        </span>
+                      </div>
+                      <span className="font-semibold text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200 shrink-0">
+                        +{studentsCount} SV sẽ ghi danh
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
@@ -1134,172 +1301,161 @@ export default function CourseManagement() {
       <Modal
         isOpen={isEnrollModalOpen}
         onClose={() => setIsEnrollModalOpen(false)}
-        title={`Ghi danh Sinh viên vào ${selectedCourse?.ten_lhp}`}
+        title={`Ghi danh Sinh viên vào: ${selectedCourse?.ten_lhp || 'Lớp học phần'}`}
       >
-        <div style={{ marginBottom: '18px' }}>
+        <div className="space-y-4">
           {/* Chế độ ghi danh: Theo Lớp hoặc Từng SV */}
-          <div style={{ display: 'flex', gap: '8px', padding: '4px', background: '#f1f5f9', borderRadius: '10px' }}>
+          <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
             <button
               type="button"
               onClick={() => setEnrollMode('by_class')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: 'none',
-                background: enrollMode === 'by_class' ? '#ffffff' : 'transparent',
-                color: enrollMode === 'by_class' ? '#2563eb' : '#64748b',
-                fontWeight: 700,
-                fontSize: '0.84rem',
-                cursor: 'pointer',
-                boxShadow: enrollMode === 'by_class' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                transition: 'all 0.15s ease'
-              }}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                enrollMode === 'by_class'
+                  ? 'bg-white text-blue-600 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <Users size={15} /> Thêm theo Lớp sinh hoạt (Nhanh)
+              <Users size={16} /> Thêm theo Lớp sinh hoạt (Nhanh)
             </button>
             <button
               type="button"
               onClick={() => setEnrollMode('individual')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: 'none',
-                background: enrollMode === 'individual' ? '#ffffff' : 'transparent',
-                color: enrollMode === 'individual' ? '#2563eb' : '#64748b',
-                fontWeight: 700,
-                fontSize: '0.84rem',
-                cursor: 'pointer',
-                boxShadow: enrollMode === 'individual' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                transition: 'all 0.15s ease'
-              }}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                enrollMode === 'individual'
+                  ? 'bg-white text-blue-600 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <UserPlus size={15} /> Thêm từng Sinh viên lẻ
+              <UserPlus size={16} /> Thêm từng Sinh viên lẻ
             </button>
           </div>
-        </div>
 
-        <form onSubmit={handleEnrollStudent} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {enrollMode === 'by_class' ? (
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                Chọn Lớp cần gán toàn bộ sinh viên *
-              </label>
-              <select
-                required
-                value={selectedClassId}
-                onChange={(e) => setSelectedClassId(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.9rem',
-                  background: '#fff',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="">-- Chọn lớp sinh hoạt --</option>
-                {classes.map((cls) => {
-                  const totalInClass = allStudents.filter((st) => st.lop_id === cls.id).length;
-                  return (
-                    <option key={cls.id} value={cls.id}>
-                      {cls.ma_lop} - {cls.ten_lop} ({cls.khoa_hoc || 'K23'}) — {totalInClass} sinh viên
-                    </option>
-                  );
-                })}
-              </select>
-
-              {/* Thông tin xem trước lớp đã chọn */}
-              {selectedClassId && (() => {
-                const classObj = classes.find((c) => String(c.id) === String(selectedClassId));
-                const studentsInClass = allStudents.filter((st) => String(st.lop_id) === String(selectedClassId));
-                const notYetEnrolled = studentsInClass.filter(
-                  (st) => !enrolledStudents.some((es) => es.id === st.id)
-                );
-                return (
-                  <div style={{ marginTop: '14px', padding: '14px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
-                        Lớp: {classObj?.ten_lop} ({classObj?.ma_lop})
-                      </span>
-                      <span style={{ fontSize: '0.78rem', padding: '3px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#059669', fontWeight: 700 }}>
-                        +{notYetEnrolled.length} SV sẽ được thêm
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div>• Tổng sĩ số lớp: <strong>{studentsInClass.length}</strong> sinh viên</div>
-                      <div>• Đã ghi danh trước đó: <strong>{studentsInClass.length - notYetEnrolled.length}</strong> sinh viên</div>
-                      <div>• Sẽ được ghi danh mới: <strong style={{ color: '#059669' }}>{notYetEnrolled.length}</strong> sinh viên</div>
-                    </div>
-                    {notYetEnrolled.length === 0 && studentsInClass.length > 0 && (
-                      <div style={{ marginTop: '8px', fontSize: '0.78rem', color: '#b45309', background: '#fffbeb', padding: '6px 10px', borderRadius: '6px' }}>
-                        ⚠️ Tất cả sinh viên trong lớp này đã có mặt trong lớp học phần!
-                      </div>
-                    )}
+          <form onSubmit={handleEnrollStudent} className="space-y-4">
+            {enrollMode === 'by_class' ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      1. Lọc theo Khoa / Viện
+                    </label>
+                    <select
+                      value={enrollFacultyId}
+                      onChange={(e) => {
+                        setEnrollFacultyId(e.target.value);
+                        setSelectedClassId('');
+                      }}
+                      className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-800"
+                    >
+                      <option value="">-- Tất cả các Khoa --</option>
+                      {faculties.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.ten_khoa} ({f.ma_khoa})
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                );
-              })()}
-            </div>
-          ) : (
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                Chọn Sinh viên cần ghi danh *
-              </label>
-              <select
-                required
-                value={enrollStudentId}
-                onChange={(e) => setEnrollStudentId(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.9rem',
-                  background: '#fff',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="">-- Chọn sinh viên --</option>
-                {allStudents
-                  .filter((st) => !enrolledStudents.some((es) => es.id === st.id))
-                  .map((st) => (
-                    <option key={st.id} value={st.id}>
-                      {st.ma_sv} - {st.ho_ten} ({st.ten_lop || 'Chưa phân lớp'})
-                    </option>
-                  ))}
-              </select>
-              <span style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                * Chỉ hiển thị các sinh viên chưa đăng ký lớp học phần này
-              </span>
-            </div>
-          )}
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
-            <button
-              type="button"
-              onClick={() => setIsEnrollModalOpen(false)}
-              style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontWeight: 600 }}
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#059669', color: '#fff', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Users size={16} /> {enrollMode === 'by_class' ? 'Ghi danh cả lớp vào LHP' : 'Ghi danh sinh viên'}
-            </button>
-          </div>
-        </form>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      2. Chọn Lớp sinh hoạt <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={selectedClassId}
+                      onChange={(e) => setSelectedClassId(e.target.value)}
+                      className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-800"
+                    >
+                      <option value="">-- Chọn lớp sinh hoạt --</option>
+                      {classes
+                        .filter((cls) => !enrollFacultyId || String(cls.khoa_id) === String(enrollFacultyId))
+                        .map((cls) => {
+                          const totalInClass = allStudents.filter((st) => st.lop_id === cls.id).length;
+                          return (
+                            <option key={cls.id} value={cls.id}>
+                              {cls.ma_lop} - {cls.ten_lop} ({totalInClass} SV)
+                            </option>
+                          );
+                        })}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Thông tin xem trước lớp đã chọn */}
+                {selectedClassId && (() => {
+                  const classObj = classes.find((c) => String(c.id) === String(selectedClassId));
+                  const studentsInClass = allStudents.filter((st) => String(st.lop_id) === String(selectedClassId));
+                  const notYetEnrolled = studentsInClass.filter(
+                    (st) => !enrolledStudents.some((es) => es.id === st.id)
+                  );
+                  return (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-xs sm:text-sm text-slate-800 flex items-center gap-1.5">
+                          <Users size={16} className="text-blue-600" />
+                          Lớp: {classObj?.ten_lop} ({classObj?.ma_lop})
+                        </span>
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+                          +{notYetEnrolled.length} SV sẽ được thêm
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-600 space-y-1">
+                        <div>• Tổng sĩ số lớp: <strong>{studentsInClass.length}</strong> sinh viên</div>
+                        <div>• Đã có trong lớp HP: <strong>{studentsInClass.length - notYetEnrolled.length}</strong> sinh viên</div>
+                        <div>• Sẽ ghi danh mới: <strong className="text-emerald-700">{notYetEnrolled.length}</strong> sinh viên</div>
+                      </div>
+                      {notYetEnrolled.length === 0 && studentsInClass.length > 0 && (
+                        <div className="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                          ⚠️ Tất cả sinh viên trong lớp này đã có mặt trong lớp học phần!
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Chọn Sinh viên cần ghi danh <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={enrollStudentId}
+                  onChange={(e) => setEnrollStudentId(e.target.value)}
+                  className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-800"
+                >
+                  <option value="">-- Chọn sinh viên --</option>
+                  {allStudents
+                    .filter((st) => !enrolledStudents.some((es) => es.id === st.id))
+                    .map((st) => (
+                      <option key={st.id} value={st.id}>
+                        {st.ma_sv} - {st.ho_ten} ({st.ten_lop || 'Chưa phân lớp'})
+                      </option>
+                    ))}
+                </select>
+                <span className="text-xs text-slate-500 mt-1 block">
+                  * Chỉ hiển thị các sinh viên chưa đăng ký lớp học phần này
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsEnrollModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] rounded-lg shadow-sm shadow-emerald-600/20 transition-all cursor-pointer"
+              >
+                <UserPlus size={16} />
+                <span>{enrollMode === 'by_class' ? 'Ghi danh cả lớp vào LHP' : 'Ghi danh sinh viên'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
       </Modal>
 
       {/* 3 Popups: Details, Edit, Delete */}

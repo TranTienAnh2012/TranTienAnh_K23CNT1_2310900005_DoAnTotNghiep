@@ -32,7 +32,7 @@ const courseController = {
 
   async createCourse(req, res) {
     try {
-      const { ma_lhp, ten_lhp, mon_hoc_id, hoc_ky_id, giang_vien_id, phong_hoc_mac_dinh, so_luong_toi_da } = req.body;
+      const { ma_lhp, ten_lhp, mon_hoc_id, hoc_ky_id, giang_vien_id, phong_hoc_mac_dinh, so_luong_toi_da, lop_id } = req.body;
       if (!ma_lhp || !ten_lhp || !mon_hoc_id || !hoc_ky_id) {
         return res.status(400).json({ success: false, message: 'Vui lòng điền đủ các trường bắt buộc của Lớp học phần.' });
       }
@@ -42,10 +42,30 @@ const courseController = {
         [ma_lhp, ten_lhp, mon_hoc_id, hoc_ky_id, giang_vien_id || null, phong_hoc_mac_dinh || null, so_luong_toi_da || 50]
       );
 
+      const newCourseId = result.insertId;
+      let enrolledCount = 0;
+
+      // Nếu có chọn lớp sinh hoạt, tự động ghi danh tất cả sinh viên của lớp vào LHP này
+      if (lop_id) {
+        const [students] = await pool.query(
+          'SELECT id FROM sinh_vien WHERE lop_id = ? AND is_deleted = FALSE',
+          [lop_id]
+        );
+        for (const sv of students) {
+          await pool.execute(
+            `INSERT INTO dang_ky_hoc_phan (lop_hoc_phan_id, sinh_vien_id, phuong_thuc, ghi_chu) 
+             VALUES (?, ?, 'admin', 'Ghi danh theo lớp sinh hoạt khi tạo LHP') 
+             ON DUPLICATE KEY UPDATE ngay_dang_ky = NOW()`,
+            [newCourseId, sv.id]
+          );
+        }
+        enrolledCount = students.length;
+      }
+
       return res.status(201).json({
         success: true,
-        message: 'Tạo lớp học phần thành công!',
-        data: { id: result.insertId }
+        message: `Tạo lớp học phần thành công!${enrolledCount > 0 ? ` Đã tự động ghi danh ${enrolledCount} sinh viên của lớp vào học phần.` : ''}`,
+        data: { id: newCourseId, enrolledCount }
       });
     } catch (error) {
       return res.status(500).json({ success: false, message: error.message });
