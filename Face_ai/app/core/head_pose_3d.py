@@ -83,9 +83,9 @@ class HeadPose3DEstimator:
             pose = "TURN_LEFT"
         elif yaw_deg <= -13.0:
             pose = "TURN_RIGHT"
-        elif pitch_deg >= 10.0:
+        elif pitch_deg >= 5.0:
             pose = "LOOK_UP"
-        elif pitch_deg <= -10.0:
+        elif pitch_deg <= -8.0:
             pose = "LOOK_DOWN"
         else:
             pose = "STRAIGHT"

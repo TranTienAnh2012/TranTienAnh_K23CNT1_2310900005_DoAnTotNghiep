@@ -209,9 +209,9 @@ class FaceDetector:
                     pose_label = "TURN_LEFT"
                 elif yaw_deg <= -12:
                     pose_label = "TURN_RIGHT"
-                elif pitch_deg >= 10:
+                elif pitch_deg >= 5.0:
                     pose_label = "LOOK_UP"
-                elif pitch_deg <= -10:
+                elif pitch_deg <= -7.0:
                     pose_label = "LOOK_DOWN"
 
                 return {

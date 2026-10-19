@@ -461,9 +461,9 @@ export default function FaceRegistrationManagement() {
     } else if (currentStepIndex === 2) {
       isTargetMet = (pose === 'TURN_RIGHT' || yawDeg <= -12) && yawDeg < -4;
     } else if (currentStepIndex === 3) {
-      isTargetMet = (pose === 'LOOK_UP' || pitchDeg >= 9) && pitchDeg > 3;
+      isTargetMet = (pose === 'LOOK_UP' || pitchDeg >= 4.5) && pitchDeg > 2.0;
     } else if (currentStepIndex === 4) {
-      isTargetMet = (pose === 'LOOK_DOWN' || pitchDeg <= -9) && pitchDeg < -3;
+      isTargetMet = (pose === 'LOOK_DOWN' || pitchDeg <= -6.0) && pitchDeg < -2.0;
     }
 
     let holdRatio = 0;
@@ -689,9 +689,9 @@ export default function FaceRegistrationManagement() {
     } else if (currentStepIndex === 2) {
       isTargetMet = (pose === 'TURN_RIGHT' || yawDeg <= -12) && yawDeg < -4;
     } else if (currentStepIndex === 3) {
-      isTargetMet = (pose === 'LOOK_UP' || pitchDeg >= 9) && pitchDeg > 3;
+      isTargetMet = (pose === 'LOOK_UP' || pitchDeg >= 4.5) && pitchDeg > 2.0;
     } else if (currentStepIndex === 4) {
-      isTargetMet = (pose === 'LOOK_DOWN' || pitchDeg <= -9) && pitchDeg < -3;
+      isTargetMet = (pose === 'LOOK_DOWN' || pitchDeg <= -6.0) && pitchDeg < -2.0;
     }
 
     if (isTargetMet) {
