@@ -499,8 +499,25 @@ export default function FaceRegistrationManagement() {
     const poseInfo = poseDict[pose] || { icon: '🎯', text: pose };
     setCurrentDetectedPose(`${poseInfo.icon} ${poseInfo.text}`);
 
-    const mainColor = isTargetMet ? '#10b981' : currentAngle.color || '#06b6d4';
-    const glowColor = isTargetMet ? 'rgba(16, 185, 129, 0.45)' : 'rgba(6, 182, 212, 0.35)';
+    const isTestMode = tabMode === 'test';
+    const mainColor = isTestMode
+      ? testResult
+        ? testResult.matched
+          ? '#10b981'
+          : '#ef4444'
+        : '#06b6d4'
+      : isTargetMet
+      ? '#10b981'
+      : currentAngle.color || '#06b6d4';
+    const glowColor = isTestMode
+      ? testResult
+        ? testResult.matched
+          ? 'rgba(16, 185, 129, 0.45)'
+          : 'rgba(239, 68, 68, 0.45)'
+        : 'rgba(6, 182, 212, 0.35)'
+      : isTargetMet
+      ? 'rgba(16, 185, 129, 0.45)'
+      : 'rgba(6, 182, 212, 0.35)';
 
     ctx.save();
 
@@ -913,11 +930,23 @@ export default function FaceRegistrationManagement() {
     }
   };
 
-  // TEST VERIFICATION
+  // TEST VERIFICATION: ĐỐI SOÁT KHUÔN MẶT THẬT VỚI VECTOR TRONG CSDL QUA FASTAPI /verify-face
   const handleTestFaceVerification = async () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !selectedPerson) return;
     setIsTesting(true);
     setTestResult(null);
+
+    // Kiểm tra xem người dùng đang chọn đã có vector khuôn mặt chưa
+    const registeredEmbedding = selectedPerson.face_embedding;
+    if (!registeredEmbedding) {
+      setIsTesting(false);
+      setTestResult({
+        success: false,
+        matched: false,
+        message: `${selectedPerson.ho_ten} chưa có hồ sơ khuôn mặt (Vector 512D) trong hệ thống. Vui lòng hoàn tất quét 5 góc và bấm "Lưu & Xác Nhận Hồ Sơ Khuôn Mặt" trước.`,
+      });
+      return;
+    }
 
     try {
       const video = videoRef.current;
@@ -937,36 +966,51 @@ export default function FaceRegistrationManagement() {
           const formData = new FormData();
           formData.append('file', blob, 'test_checkin.jpg');
 
-          const res = await fetch('http://localhost:8000/extract-embedding', {
+          // Chuẩn hóa vector đã lưu thành chuỗi JSON gửi tới backend FastAPI
+          const embeddingStr =
+            typeof registeredEmbedding === 'string'
+              ? registeredEmbedding
+              : JSON.stringify(registeredEmbedding);
+          formData.append('registered_embedding', embeddingStr);
+          formData.append('threshold', '0.60');
+
+          const res = await fetch('http://localhost:8000/verify-face', {
             method: 'POST',
             body: formData,
           });
 
           if (res.ok) {
             const data = await res.json();
+            // data format: { success: true, is_match: bool, similarity_score: float, threshold: float, message: str }
             setTestResult({
               success: true,
-              matched: true,
-              similarity: 0.94,
-              quality: data.quality,
-              message: `Khuôn mặt hợp lệ! Trùng khớp với định danh của ${selectedPerson?.ho_ten || 'người dùng'}.`,
+              matched: Boolean(data.is_match),
+              similarity: data.similarity_score,
+              threshold: data.threshold,
+              message:
+                data.message ||
+                (data.is_match
+                  ? `Xác thực thành công! Khớp ${Math.round(data.similarity_score * 100)}% với hồ sơ của ${selectedPerson.ho_ten}.`
+                  : `Khuôn mặt không trùng khớp (Độ tương đồng: ${Math.round(data.similarity_score * 100)}% < ngưỡng ${Math.round((data.threshold || 0.6) * 100)}%).`),
             });
           } else {
+            const errData = await res.json().catch(() => ({}));
             setTestResult({
               success: false,
               matched: false,
-              message: 'Không tìm thấy khuôn mặt rõ nét hoặc chưa đạt ngưỡng an toàn.',
+              message: errData.detail || 'Không tìm thấy khuôn mặt rõ nét trong camera hoặc lỗi xử lý AI.',
             });
           }
         } catch (err) {
           setTestResult({
             success: false,
-            message: 'Lỗi kiểm tra AI: ' + err.message,
+            matched: false,
+            message: 'Lỗi kết nối tới AI Face Service (port 8000): ' + err.message,
           });
         } finally {
           setIsTesting(false);
         }
-      }, 'image/jpeg', 0.9);
+      }, 'image/jpeg', 0.95);
     } catch {
       setIsTesting(false);
     }
@@ -1701,18 +1745,22 @@ export default function FaceRegistrationManagement() {
                 </div>
               )}
 
-              {/* TAB 3: TEST RECOGNITION MATCH VERIFY */}
+              {/* TAB 3: TEST RECOGNITION MATCH VERIFY (ĐỐI SOÁT REAL-TIME CHUẨN 4:3 VỚI BBOX & LANDMARKS) */}
               {tabMode === 'test' && (
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-xs font-extrabold text-slate-800 mb-1">
-                      Kiểm Tra Nhận Diện Khuôn Mặt Trực Tiếp
-                    </h4>
-                    <p className="text-[11px] text-slate-500 mb-2.5">
-                      Đối soát khuôn mặt với mạng nơ-ron ArcFace / YuNet 512D của {selectedPerson.ho_ten}.
-                    </p>
+                <div className="bg-slate-50 p-4 sm:p-5 rounded-3xl border border-slate-200/80 grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch transition-all duration-300">
+                  <div className="md:col-span-7 flex flex-col justify-between">
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 mb-1 flex items-center gap-2">
+                        <ScanFace size={18} className="text-blue-600" />
+                        Kiểm Tra Đối Soát Khuôn Mặt Trực Tiếp
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mb-2.5">
+                        Hệ thống tự động phát hiện BoundingBox & FaceLandmarks từ camera và đối soát vector 512D với hồ sơ của <strong>{selectedPerson.ho_ten}</strong>.
+                      </p>
+                    </div>
 
-                    <div className="relative w-full h-[200px] bg-slate-950 rounded-xl overflow-hidden">
+                    {/* Viewport Camera: tỉ lệ aspect-[4/3] chuẩn webcam, không bị kéo dẹt ngang, có đầy đủ BoundingBox & Landmarks */}
+                    <div className="relative w-full aspect-[4/3] max-w-[560px] mx-auto bg-slate-950 rounded-2xl overflow-hidden border-2 border-slate-800 shadow-md flex items-center justify-center">
                       <video
                         ref={videoRef}
                         className="w-full h-full object-cover scale-x-[-1]"
@@ -1720,63 +1768,111 @@ export default function FaceRegistrationManagement() {
                         muted
                         autoPlay
                       />
+                      <canvas
+                        ref={overlayCanvasRef}
+                        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                      />
+                      <canvas ref={canvasRef} className="hidden" />
+
+                      {/* Header Badge */}
+                      <div className="absolute top-2.5 left-2.5 px-3 py-1 rounded-full bg-slate-900/85 border border-white/15 text-white text-[11px] font-bold flex items-center gap-1.5 pointer-events-none backdrop-blur-xs">
+                        <ScanFace size={13} className="text-emerald-400" />
+                        <span>Đối soát: {selectedPerson.ho_ten}</span>
+                      </div>
+
+                      {/* Pose Status Pill */}
+                      <div className="absolute bottom-2.5 right-2.5 pointer-events-none">
+                        <div
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border backdrop-blur-xs ${
+                            faceInFrame
+                              ? testResult
+                                ? testResult.matched
+                                  ? 'bg-emerald-900/90 text-emerald-300 border-emerald-500'
+                                  : 'bg-rose-950/90 text-rose-300 border-rose-600'
+                                : 'bg-slate-900/90 text-slate-200 border-white/20'
+                              : 'bg-rose-950/90 text-rose-300 border-rose-600'
+                          }`}
+                        >
+                          {faceInFrame ? (testResult ? (testResult.matched ? '✓ Khớp khuôn mặt' : '⚠️ Không khớp') : '✓ Đã khóa khuôn mặt') : 'Không có mặt trong khung'}
+                        </div>
+                      </div>
                     </div>
 
                     <button
                       type="button"
                       onClick={handleTestFaceVerification}
                       disabled={isTesting || !isCameraActive}
-                      className="mt-2.5 w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="mt-3 w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 disabled:opacity-50 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
                     >
-                      {isTesting ? <Loader2 size={14} className="spin" /> : <ScanFace size={14} />}
-                      <span>{isTesting ? 'Đang đối soát AI...' : 'Bấm Đối Soát Khuôn Mặt Thử Nghiệm'}</span>
+                      {isTesting ? <Loader2 size={16} className="spin" /> : <ScanFace size={16} />}
+                      <span>{isTesting ? 'Đang trích xuất & đối soát vector 512D qua FastAPI...' : 'Bấm Đối Soát Khuôn Mặt Thử Nghiệm'}</span>
                     </button>
                   </div>
 
-                  <div className="space-y-3">
-                    <h5 className="text-xs font-bold text-slate-700">Kết Quả Thử Nghiệm:</h5>
-                    {testResult ? (
-                      <div
-                        className={`p-3 rounded-xl border flex flex-col gap-1 text-xs ${
-                          testResult.matched
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                            : 'bg-rose-50 text-rose-800 border-rose-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 font-bold">
-                          {testResult.matched ? <ShieldCheck size={16} /> : <AlertCircle size={16} />}
-                          <span>{testResult.matched ? 'Xác thực thành công!' : 'Chưa khớp khuôn mặt'}</span>
-                        </div>
-                        <div className="text-[11px]">{testResult.message}</div>
-                        {testResult.similarity && (
-                          <div className="text-[11px] font-bold text-emerald-700 mt-1">
-                            Độ tương đồng Cosine: {(testResult.similarity * 100).toFixed(1)}% (Ngưỡng an toàn: 68%)
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="p-4 rounded-xl bg-white border border-dashed border-slate-200 text-center text-xs text-slate-400">
-                        Chưa có dữ liệu kiểm tra. Vui lòng bấm nút đối soát bên trái.
-                      </div>
-                    )}
+                  <div className="md:col-span-5 flex flex-col justify-between space-y-3">
+                    <div className="space-y-3">
+                      <h5 className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <ShieldCheck size={16} className="text-blue-600" />
+                        Kết Quả Nhận Diện Trực Tiếp:
+                      </h5>
 
-                    {/* So sánh với hồ sơ đã lưu */}
-                    <div className="p-3 rounded-xl bg-white border border-slate-200 flex items-center gap-3">
-                      {selectedPerson.avatar_url && (
-                        <img
-                          src={
-                            selectedPerson.avatar_url.startsWith('http')
-                              ? selectedPerson.avatar_url
-                              : `http://localhost:5000${selectedPerson.avatar_url}`
-                          }
-                          alt="Avatar"
-                          className="w-10 h-10 rounded-lg object-cover"
-                        />
+                      {testResult ? (
+                        <div
+                          className={`p-3.5 rounded-2xl border flex flex-col gap-2 text-xs shadow-2xs ${
+                            testResult.matched
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : 'bg-rose-50 text-rose-800 border-rose-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 font-bold text-xs sm:text-sm">
+                            {testResult.matched ? (
+                              <CheckCircle2 size={17} className="text-emerald-600 shrink-0" />
+                            ) : (
+                              <AlertCircle size={17} className="text-rose-600 shrink-0" />
+                            )}
+                            <span>{testResult.matched ? 'Xác thực danh tính thành công!' : 'Khuôn mặt không trùng khớp'}</span>
+                          </div>
+                          <p className="text-[11px] leading-relaxed text-slate-700">{testResult.message}</p>
+                          {testResult.similarity !== undefined && (
+                            <div className="mt-1 pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
+                              <span className="text-slate-600 font-semibold">Độ tương đồng Cosine:</span>
+                              <span className={`font-extrabold text-sm ${testResult.matched ? 'text-emerald-700' : 'text-rose-600'}`}>
+                                {(testResult.similarity * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-2xl bg-white border border-dashed border-slate-300 text-center text-xs text-slate-400 leading-relaxed">
+                          Chưa có dữ liệu đối soát.<br />Nhìn thẳng trực diện vào camera và nhấn nút <strong>"Bấm Đối Soát Khuôn Mặt Thử Nghiệm"</strong> để chạy AI.
+                        </div>
                       )}
-                      <div className="text-xs">
-                        <div className="font-bold text-slate-800">{selectedPerson.ho_ten}</div>
-                        <div className="text-[11px] text-slate-400">Trạng thái: {hasFace ? 'Đã lưu vector 512D' : 'Chưa có mẫu'}</div>
+
+                      {/* Thông tin hồ sơ được so sánh */}
+                      <div className="p-3 rounded-2xl bg-white border border-slate-200/80 flex items-center gap-3 shadow-2xs">
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                          {selectedPerson.ho_ten?.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs sm:text-sm text-slate-800 truncate">
+                            {selectedPerson.ho_ten}
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-mono">
+                            {selectedPerson.ma_sv || selectedPerson.ma_gv}
+                          </div>
+                          <div className="text-[10px]">
+                            {selectedPerson.face_embedding ? (
+                              <span className="text-emerald-600 font-semibold">✓ Đã có vector 512D</span>
+                            ) : (
+                              <span className="text-amber-600 font-semibold">⚠️ Chưa lưu vector</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
+                    </div>
+
+                    <div className="p-2.5 bg-white rounded-xl border border-slate-100 text-[10px] text-slate-400 leading-normal">
+                      💡 <strong>Cơ chế AI:</strong> Hệ thống trích xuất vector 512 chiều từ camera qua YuNet & ArcFace SFace, sau đó tính khoảng cách Cosine với vector mẫu đã lưu để quyết định danh tính.
                     </div>
                   </div>
                 </div>
