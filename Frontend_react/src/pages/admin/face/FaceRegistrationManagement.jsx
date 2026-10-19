@@ -295,10 +295,11 @@ export default function FaceRegistrationManagement() {
 
   // Client-side simulated HUD to ensure 60 FPS zero-lag rendering
   const generateClientBiometricHUD = (w, h) => {
-    const boxW = Math.round(w * 0.44);
-    const boxH = Math.round(h * 0.58);
+    // Tỉ lệ tối ưu mở rộng chuẩn nhân trắc học khuôn mặt để ôm trọn từ trán đến cằm
+    const boxW = Math.round(w * 0.50);
+    const boxH = Math.round(h * 0.68);
     const boxX = Math.round((w - boxW) / 2);
-    const boxY = Math.round((h - boxH) / 2.2);
+    const boxY = Math.round((h - boxH) / 2.3);
 
     const step = activeStepRef.current;
     let yaw = 0;
@@ -329,11 +330,11 @@ export default function FaceRegistrationManagement() {
         roll_deg: 0,
       },
       landmarks: {
-        right_eye: { x: boxX + boxW * 0.32, y: boxY + boxH * 0.38 },
-        left_eye: { x: boxX + boxW * 0.68, y: boxY + boxH * 0.38 },
-        nose_tip: { x: boxX + boxW * 0.5, y: boxY + boxH * 0.54 },
-        mouth_right: { x: boxX + boxW * 0.36, y: boxY + boxH * 0.74 },
-        mouth_left: { x: boxX + boxW * 0.64, y: boxY + boxH * 0.74 },
+        right_eye: { x: boxX + boxW * 0.32, y: boxY + boxH * 0.40 },
+        left_eye: { x: boxX + boxW * 0.68, y: boxY + boxH * 0.40 },
+        nose_tip: { x: boxX + boxW * 0.50, y: boxY + boxH * 0.57 },
+        mouth_right: { x: boxX + boxW * 0.35, y: boxY + boxH * 0.77 },
+        mouth_left: { x: boxX + boxW * 0.65, y: boxY + boxH * 0.77 },
       },
     };
   };
@@ -438,10 +439,13 @@ export default function FaceRegistrationManagement() {
 
     setFaceInFrame(true);
     const rawBox = data.bbox;
-    const boxW = rawBox.width;
-    const boxH = rawBox.height;
-    const boxX = overlay.width - (rawBox.x + boxW);
-    const boxY = rawBox.y;
+    // Mở rộng thông minh bbox (padding 16% chiều rộng và 22% chiều cao) để khung Biometric HUD và lưới 3D ôm trọn từ trán đến cằm và 2 bên má ở mọi cự ly xa gần
+    const padX = rawBox.width * 0.16;
+    const padY = rawBox.height * 0.22;
+    const boxW = rawBox.width + padX * 2;
+    const boxH = rawBox.height + padY * 2;
+    const boxX = overlay.width - (rawBox.x + rawBox.width + padX);
+    const boxY = Math.max(0, rawBox.y - padY * 1.2);
 
     const pose = data.pose ? data.pose.pose : 'STRAIGHT';
     const yawDeg = data.pose?.yaw_deg ?? 0;
@@ -1501,7 +1505,7 @@ export default function FaceRegistrationManagement() {
               {tabMode === 'camera' && (
                 <div
                   className={`grid grid-cols-1 gap-6 items-stretch transition-all duration-300 ${
-                    isListExpanded ? 'md:grid-cols-12' : 'lg:grid-cols-12 max-w-6xl mx-auto w-full'
+                    isListExpanded ? 'md:grid-cols-12' : 'lg:grid-cols-12 max-w-7xl mx-auto w-full'
                   }`}
                 >
                   {/* Viewport Canvas Container: Khung camera mở rộng cực đại theo hình vuông chuẩn (7 Cột) */}
@@ -1514,7 +1518,7 @@ export default function FaceRegistrationManagement() {
                   >
                     <div
                       className={`relative w-full aspect-square bg-slate-950 rounded-3xl overflow-hidden border-2 border-slate-800 flex items-center justify-center shadow-xl transition-all duration-300 ${
-                        isListExpanded ? 'max-w-[340px]' : 'max-w-[560px] xl:max-w-[580px]'
+                        isListExpanded ? 'max-w-[340px]' : 'max-w-[620px] xl:max-w-[660px]'
                       }`}
                     >
                       <video
@@ -1526,7 +1530,7 @@ export default function FaceRegistrationManagement() {
                       />
                       <canvas
                         ref={overlayCanvasRef}
-                        className="absolute inset-0 w-full h-full pointer-events-none"
+                        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                       />
                       <canvas ref={canvasRef} className="hidden" />
 
