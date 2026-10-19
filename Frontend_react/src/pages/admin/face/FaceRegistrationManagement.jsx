@@ -20,7 +20,9 @@ import {
   Trash2,
   Loader2,
   UserCheck,
-  RotateCcw
+  RotateCcw,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { adminService } from '../../../services/adminService';
 
@@ -93,6 +95,9 @@ export default function FaceRegistrationManagement() {
 
   // Selected person for face registration
   const [selectedPerson, setSelectedPerson] = useState(null);
+
+  // Thu gọn / Đẩy rộng danh sách thông tin sinh viên & form đăng ký Face
+  const [isListExpanded, setIsListExpanded] = useState(true);
 
   // --- FORM FACE 3D CỦA TEACHER CHO ROLE ADMIN ---
   const [tabMode, setTabMode] = useState('camera'); // 'camera' | 'upload' | 'test'
@@ -1089,9 +1094,37 @@ export default function FaceRegistrationManagement() {
 
       {/* Main Grid: CỘT TRÁI (DANH SÁCH HÌNH 2) & CỘT PHẢI (FORM TEACHER FACE REGISTRATION) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* CỘT TRÁI: DANH SÁCH & BỘ LỌC (GIỮ NGUYÊN 100% BỐ CỤC Ở HÌNH 2) */}
-        <div className="lg:col-span-5 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col h-[780px]">
+        {/* CỘT TRÁI: DANH SÁCH & BỘ LỌC (GIỮ NGUYÊN 100% BỐ CỤC Ở HÌNH 2, CÓ THỂ THU GỌN) */}
+        <div
+          className={`${
+            isListExpanded ? 'lg:col-span-5 flex flex-col h-[780px]' : 'hidden'
+          } bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs transition-all duration-300`}
+        >
           <div className="space-y-3 pb-3 border-b border-slate-100">
+            {/* Header thanh danh sách có nút thu gọn */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                {activeTab === 'student' ? (
+                  <GraduationCap size={15} className="text-blue-600" />
+                ) : (
+                  <Users size={15} className="text-blue-600" />
+                )}
+                <span>Danh sách {activeTab === 'student' ? 'Sinh viên' : 'Giảng viên'}</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                  {activeTab === 'student' ? filteredStudents.length : filteredTeachers.length}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsListExpanded(false)}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 text-xs font-medium transition-colors cursor-pointer"
+                title="Thu gọn danh sách để phóng to vùng quét khuôn mặt"
+              >
+                <PanelLeftClose size={14} />
+                <span className="hidden sm:inline">Thu gọn</span>
+              </button>
+            </div>
+
             {/* Search */}
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1240,8 +1273,12 @@ export default function FaceRegistrationManagement() {
           </div>
         </div>
 
-        {/* CỘT PHẢI: FORM ĐĂNG KÝ QUÉT 3D FACEID CỦA ROLE TEACHER DÀNH CHO ADMIN (7 Cột) */}
-        <div className="lg:col-span-7 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col min-h-[780px]">
+        {/* CỘT PHẢI: FORM ĐĂNG KÝ QUÉT 3D FACEID CỦA ROLE TEACHER DÀNH CHO ADMIN (MỞ RỘNG TOÀN DIỆN KHI THU DANH SÁCH) */}
+        <div
+          className={`${
+            isListExpanded ? 'lg:col-span-7' : 'lg:col-span-12'
+          } bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col min-h-[780px] transition-all duration-300`}
+        >
           {selectedPerson ? (
             <div className="space-y-4">
               {/* Header profile người đang chọn */}
@@ -1275,6 +1312,34 @@ export default function FaceRegistrationManagement() {
 
                 {/* Cụm nút thao tác khuôn mặt */}
                 <div className="flex items-center gap-2 flex-wrap">
+                  {/* Nút Thu gọn / Mở rộng danh sách */}
+                  <button
+                    type="button"
+                    onClick={() => setIsListExpanded(!isListExpanded)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold shadow-2xs transition-all cursor-pointer ${
+                      !isListExpanded
+                        ? 'border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 ring-2 ring-blue-500/10'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
+                    }`}
+                    title={
+                      isListExpanded
+                        ? 'Thu gọn danh sách để mở rộng form đăng ký Face AI'
+                        : 'Mở lại danh sách sinh viên / giảng viên'
+                    }
+                  >
+                    {!isListExpanded ? (
+                      <>
+                        <PanelLeftOpen size={13} className="text-blue-600" />
+                        <span>Mở danh sách ({activeTab === 'student' ? students.length : teachers.length})</span>
+                      </>
+                    ) : (
+                      <>
+                        <PanelLeftClose size={13} />
+                        <span>Thu gọn danh sách</span>
+                      </>
+                    )}
+                  </button>
+
                   {/* Nút đặt lại phiên quét tạm thời */}
                   {capturedCount > 0 && (
                     <button
@@ -1435,8 +1500,12 @@ export default function FaceRegistrationManagement() {
               {/* TAB 1: LIVE 3D FACEID CAMERA */}
               {tabMode === 'camera' && (
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
-                  {/* Viewport Canvas Container (7 Cột) */}
-                  <div className="md:col-span-7 relative h-[310px] bg-slate-950 rounded-2xl overflow-hidden border-2 border-slate-800 flex items-center justify-center">
+                  {/* Viewport Canvas Container (7 Cột khi bình thường, 8 Cột & cao 390px khi thu gọn danh sách) */}
+                  <div
+                    className={`${
+                      isListExpanded ? 'md:col-span-7 h-[310px]' : 'md:col-span-8 h-[390px]'
+                    } relative bg-slate-950 rounded-2xl overflow-hidden border-2 border-slate-800 flex items-center justify-center transition-all duration-300`}
+                  >
                     <video
                       ref={videoRef}
                       className="w-full h-full object-cover scale-x-[-1]"
@@ -1478,8 +1547,12 @@ export default function FaceRegistrationManagement() {
                     </div>
                   </div>
 
-                  {/* Step Guidance & Snapshot Preview (5 Cột) */}
-                  <div className="md:col-span-5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col justify-between gap-2.5">
+                  {/* Step Guidance & Snapshot Preview (5 Cột khi bình thường, 4 Cột khi thu gọn danh sách) */}
+                  <div
+                    className={`${
+                      isListExpanded ? 'md:col-span-5' : 'md:col-span-4'
+                    } bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col justify-between gap-2.5 transition-all duration-300`}
+                  >
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
@@ -1770,8 +1843,21 @@ export default function FaceRegistrationManagement() {
                 Chưa chọn {activeTab === 'student' ? 'Sinh viên' : 'Giảng viên'}
               </h3>
               <p className="text-xs text-slate-400 max-w-sm">
-                Vui lòng nhấp chọn một {activeTab === 'student' ? 'sinh viên' : 'giảng viên'} từ danh sách bên trái để tiến hành đăng ký khuôn mặt Apple FaceID 3D đa góc độ
+                Vui lòng nhấp chọn một {activeTab === 'student' ? 'sinh viên' : 'giảng viên'} từ danh sách để tiến hành đăng ký khuôn mặt Apple FaceID 3D đa góc độ
               </p>
+              {!isListExpanded && (
+                <button
+                  type="button"
+                  onClick={() => setIsListExpanded(true)}
+                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-blue-600/20 transition-all cursor-pointer"
+                >
+                  <PanelLeftOpen size={16} />
+                  <span>
+                    Mở danh sách {activeTab === 'student' ? 'Sinh viên' : 'Giảng viên'} (
+                    {activeTab === 'student' ? students.length : teachers.length})
+                  </span>
+                </button>
+              )}
             </div>
           )}
         </div>
