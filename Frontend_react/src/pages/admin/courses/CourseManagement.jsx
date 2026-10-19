@@ -62,6 +62,7 @@ export default function CourseManagement() {
     ten_lhp: '',
     mon_hoc_id: '',
     hoc_ky_id: '',
+    teacher_khoa_id: '', // Khoa để lọc giảng viên phụ trách
     giang_vien_id: '',
     phong_hoc_mac_dinh: '',
     enable_auto_enroll: false,
@@ -224,6 +225,8 @@ export default function CourseManagement() {
           ...p,
           ma_lhp: '',
           ten_lhp: '',
+          teacher_khoa_id: '',
+          giang_vien_id: '',
           phong_hoc_mac_dinh: '',
           enable_auto_enroll: false,
           khoa_id: '',
@@ -1071,36 +1074,92 @@ export default function CourseManagement() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Giảng viên phụ trách
-              </label>
-              <select
-                value={courseForm.giang_vien_id}
-                onChange={(e) => setCourseForm({ ...courseForm, giang_vien_id: e.target.value })}
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800"
-              >
-                {teachers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.ho_ten}
-                  </option>
-                ))}
-              </select>
+          {/* PHÂN CÔNG GIẢNG VIÊN PHỤ TRÁCH (LỌC THEO KHOA) */}
+          <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Users size={15} className="text-blue-600" />
+                Phân công Giảng viên phụ trách
+              </span>
+              <span className="text-[11px] text-slate-500">Lọc theo Khoa để tránh lẫn lộn</span>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Phòng học mặc định
-              </label>
-              <input
-                type="text"
-                placeholder="vd: P.502 - Nhà A1"
-                value={courseForm.phong_hoc_mac_dinh}
-                onChange={(e) => setCourseForm({ ...courseForm, phong_hoc_mac_dinh: e.target.value })}
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800 placeholder-slate-400"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  1. Lọc theo Khoa / Viện
+                </label>
+                <select
+                  value={courseForm.teacher_khoa_id}
+                  onChange={(e) => {
+                    const newKhoaId = e.target.value;
+                    const gvInKhoa = teachers.filter((t) => !newKhoaId || String(t.khoa_id) === String(newKhoaId));
+                    setCourseForm((p) => ({
+                      ...p,
+                      teacher_khoa_id: newKhoaId,
+                      giang_vien_id: gvInKhoa.some((t) => String(t.id) === String(p.giang_vien_id))
+                        ? p.giang_vien_id
+                        : (gvInKhoa[0]?.id || '')
+                    }));
+                  }}
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-800"
+                >
+                  <option value="">-- Tất cả các Khoa --</option>
+                  {faculties.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.ten_khoa} ({f.ma_khoa})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  2. Chọn Giảng viên phụ trách
+                </label>
+                <select
+                  value={courseForm.giang_vien_id}
+                  onChange={(e) => setCourseForm({ ...courseForm, giang_vien_id: e.target.value })}
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-800"
+                >
+                  <option value="">-- Chưa phân công giảng viên --</option>
+                  {teachers
+                    .filter((t) => !courseForm.teacher_khoa_id || String(t.khoa_id) === String(courseForm.teacher_khoa_id))
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.ho_ten} ({t.ma_gv}){t.ten_khoa ? ` - ${t.ten_khoa}` : ''}
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
+
+            {courseForm.giang_vien_id && (() => {
+              const curGV = teachers.find((t) => String(t.id) === String(courseForm.giang_vien_id));
+              return (
+                <div className="text-xs text-blue-700 bg-white p-2 rounded-lg border border-blue-100 flex items-center justify-between">
+                  <span>
+                    Giảng viên: <strong>{curGV?.ho_ten}</strong> ({curGV?.ma_gv})
+                  </span>
+                  <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                    {curGV?.ten_khoa || 'Chưa gán khoa'}
+                  </span>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Phòng học mặc định
+            </label>
+            <input
+              type="text"
+              placeholder="vd: P.502 - Nhà A1"
+              value={courseForm.phong_hoc_mac_dinh}
+              onChange={(e) => setCourseForm({ ...courseForm, phong_hoc_mac_dinh: e.target.value })}
+              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-slate-800 placeholder-slate-400"
+            />
           </div>
 
           {/* Tùy chọn: Thêm sinh viên vào LHP ngay khi tạo (Chọn Khoa -> Chọn Lớp) */}
@@ -1472,6 +1531,7 @@ export default function CourseManagement() {
         subjects={subjects}
         semesters={semesters}
         teachers={teachers}
+        faculties={faculties}
         onClose={() => setEditCourse(null)}
         onSuccess={() => {
           setNotice({ type: 'success', message: 'Cập nhật lớp học phần thành công!' });
