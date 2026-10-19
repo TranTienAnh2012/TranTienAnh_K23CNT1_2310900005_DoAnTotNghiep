@@ -24,6 +24,7 @@ import SemesterManagement from '../pages/admin/semesters/SemesterManagement';
 import CourseManagement from '../pages/admin/courses/CourseManagement';
 import ScheduleManagement from '../pages/admin/schedules/ScheduleManagement';
 import ExamManagement from '../pages/admin/exams/ExamManagement';
+import FaceRegistrationManagement from '../pages/admin/face/FaceRegistrationManagement';
 
 // Teacher Pages
 import TeacherDashboard from '../pages/teacher/TeacherDashboard';
@@ -65,6 +66,7 @@ export default function AppRoutes() {
           {/* Người dùng & Tài khoản tách biệt */}
           <Route path="students" element={<StudentManagement />} />
           <Route path="teachers" element={<TeacherManagement />} />
+          <Route path="face-registration" element={<FaceRegistrationManagement />} />
           <Route path="accounts" element={<AccountManagement />} />
           <Route path="users" element={<Navigate to="/admin/students" replace />} />
 

@@ -16,11 +16,21 @@ export const adminService = {
   createTeacher: (data) => api.post('/admin/teachers', data),
   updateTeacher: (id, data) => api.put(`/admin/teachers/${id}`, data),
   deleteTeacher: (id) => api.delete(`/admin/teachers/${id}`),
+  registerTeacherFace: (id, formData) =>
+    api.post(`/admin/teachers/${id}/register-face`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+  deleteTeacherFace: (id) => api.delete(`/admin/teachers/${id}/face`),
 
   getStudents: () => api.get('/admin/students'),
   createStudent: (data) => api.post('/admin/students', data),
   updateStudent: (id, data) => api.put(`/admin/students/${id}`, data),
   deleteStudent: (id) => api.delete(`/admin/students/${id}`),
+  registerStudentFace: (id, formData) =>
+    api.post(`/admin/students/${id}/register-face`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+  deleteStudentFace: (id) => api.delete(`/admin/students/${id}/face`),
 
   // Academic
   getFaculties: () => api.get('/admin/faculties'),

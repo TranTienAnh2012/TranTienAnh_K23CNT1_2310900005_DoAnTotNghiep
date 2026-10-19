@@ -35,6 +35,7 @@ export default function Sidebar() {
       items: [
         { to: '/admin/students', label: 'Quản lý Sinh viên', icon: GraduationCap },
         { to: '/admin/teachers', label: 'Quản lý Giảng viên', icon: Users },
+        { to: '/admin/face-registration', label: 'Đăng ký Khuôn mặt (Face AI)', icon: Camera },
         { to: '/admin/accounts', label: 'Tài khoản Hệ thống', icon: KeyRound }
       ]
     },

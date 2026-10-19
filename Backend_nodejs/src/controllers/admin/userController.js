@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { pool } = require('../../config/db');
+const faceAiService = require('../../services/faceAiService');
 
 /**
  * Controller Quản trị Người dùng (Admin)
@@ -690,6 +691,128 @@ const userController = {
       return res.status(500).json({ success: false, message: 'Lỗi xóa sinh viên: ' + error.message });
     } finally {
       connection.release();
+    }
+  },
+
+  // --- ĐĂNG KÝ / XÓA KHUÔN MẶT CHO SINH VIÊN (ADMIN) ---
+  async registerStudentFace(req, res) {
+    try {
+      const { id } = req.params;
+      const [students] = await pool.execute('SELECT id, ma_sv, ho_ten FROM sinh_vien WHERE id = ? AND is_deleted = FALSE', [id]);
+      if (students.length === 0) {
+        return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ sinh viên.' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Vui lòng cung cấp file ảnh chân dung rõ nét.' });
+      }
+
+      const avatarRelativePath = `/uploads/avatars/${req.file.filename}`;
+      const imagePath = req.file.path;
+
+      // Trích xuất vector embedding bằng Face AI Service
+      const aiResult = await faceAiService.extractEmbedding(imagePath, req.file.filename);
+      if (!aiResult.success) {
+        return res.status(400).json({
+          success: false,
+          message: aiResult.message || 'Không thể trích xuất đặc trưng khuôn mặt từ ảnh này. Vui lòng chụp/chọn ảnh góc nhìn rõ hơn.'
+        });
+      }
+
+      const embeddingJson = JSON.stringify(aiResult.embedding);
+      await pool.execute(
+        `UPDATE sinh_vien 
+         SET avatar_url = ?, face_embedding = ?, face_updated_at = NOW() 
+         WHERE id = ?`,
+        [avatarRelativePath, embeddingJson, id]
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: `Đăng ký dữ liệu khuôn mặt cho sinh viên ${students[0].ho_ten} (${students[0].ma_sv}) thành công!`,
+        data: {
+          avatar_url: avatarRelativePath,
+          quality: aiResult.quality,
+          face_updated_at: new Date()
+        }
+      });
+    } catch (error) {
+      console.error('[userController.registerStudentFace]', error);
+      return res.status(500).json({ success: false, message: 'Lỗi đăng ký khuôn mặt: ' + error.message });
+    }
+  },
+
+  async deleteStudentFace(req, res) {
+    try {
+      const { id } = req.params;
+      await pool.execute(
+        'UPDATE sinh_vien SET face_embedding = NULL, face_updated_at = NULL WHERE id = ?',
+        [id]
+      );
+      return res.status(200).json({ success: true, message: 'Đã xóa dữ liệu khuôn mặt mẫu của sinh viên thành công!' });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Lỗi xóa dữ liệu khuôn mặt: ' + error.message });
+    }
+  },
+
+  // --- ĐĂNG KÝ / XÓA KHUÔN MẶT CHO GIẢNG VIÊN (ADMIN) ---
+  async registerTeacherFace(req, res) {
+    try {
+      const { id } = req.params;
+      const [teachers] = await pool.execute('SELECT id, ma_gv, ho_ten FROM giang_vien WHERE id = ? AND is_deleted = FALSE', [id]);
+      if (teachers.length === 0) {
+        return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ giảng viên.' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Vui lòng cung cấp file ảnh chân dung rõ nét.' });
+      }
+
+      const avatarRelativePath = `/uploads/avatars/${req.file.filename}`;
+      const imagePath = req.file.path;
+
+      // Trích xuất vector embedding bằng Face AI Service
+      const aiResult = await faceAiService.extractEmbedding(imagePath, req.file.filename);
+      if (!aiResult.success) {
+        return res.status(400).json({
+          success: false,
+          message: aiResult.message || 'Không thể trích xuất đặc trưng khuôn mặt từ ảnh này. Vui lòng chụp/chọn ảnh góc nhìn rõ hơn.'
+        });
+      }
+
+      const embeddingJson = JSON.stringify(aiResult.embedding);
+      await pool.execute(
+        `UPDATE giang_vien 
+         SET avatar_url = ?, face_embedding = ?, face_updated_at = NOW() 
+         WHERE id = ?`,
+        [avatarRelativePath, embeddingJson, id]
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: `Đăng ký dữ liệu khuôn mặt cho giảng viên ${teachers[0].ho_ten} (${teachers[0].ma_gv}) thành công!`,
+        data: {
+          avatar_url: avatarRelativePath,
+          quality: aiResult.quality,
+          face_updated_at: new Date()
+        }
+      });
+    } catch (error) {
+      console.error('[userController.registerTeacherFace]', error);
+      return res.status(500).json({ success: false, message: 'Lỗi đăng ký khuôn mặt giảng viên: ' + error.message });
+    }
+  },
+
+  async deleteTeacherFace(req, res) {
+    try {
+      const { id } = req.params;
+      await pool.execute(
+        'UPDATE giang_vien SET face_embedding = NULL, face_updated_at = NULL WHERE id = ?',
+        [id]
+      );
+      return res.status(200).json({ success: true, message: 'Đã xóa dữ liệu khuôn mặt mẫu của giảng viên thành công!' });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Lỗi xóa dữ liệu khuôn mặt: ' + error.message });
     }
   }
 };

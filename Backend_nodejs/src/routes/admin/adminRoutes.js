@@ -4,6 +4,7 @@ const userController = require('../../controllers/admin/userController');
 const academicController = require('../../controllers/admin/academicController');
 const courseController = require('../../controllers/admin/courseController');
 const examController = require('../../controllers/admin/examController');
+const upload = require('../../middlewares/uploadMiddleware');
 
 // 1. Thống kê Dashboard
 router.get('/dashboard/stats', userController.getDashboardStats);
@@ -17,17 +18,21 @@ router.patch('/users/:id/reset-password', userController.resetPassword);
 router.put('/users/:id', userController.updateUser);
 router.delete('/users/:id', userController.deleteUser);
 
-// 3. Quản lý Giảng viên
+// 3. Quản lý Giảng viên & Face AI
 router.get('/teachers', userController.getAllTeachers);
 router.post('/teachers', userController.createTeacher);
 router.put('/teachers/:id', userController.updateTeacher);
 router.delete('/teachers/:id', userController.deleteTeacher);
+router.post('/teachers/:id/register-face', upload.single('avatar'), userController.registerTeacherFace);
+router.delete('/teachers/:id/face', userController.deleteTeacherFace);
 
-// 4. Quản lý Sinh viên
+// 4. Quản lý Sinh viên & Face AI
 router.get('/students', userController.getAllStudents);
 router.post('/students', userController.createStudent);
 router.put('/students/:id', userController.updateStudent);
 router.delete('/students/:id', userController.deleteStudent);
+router.post('/students/:id/register-face', upload.single('avatar'), userController.registerStudentFace);
+router.delete('/students/:id/face', userController.deleteStudentFace);
 
 // 5. Quản lý Khoa
 router.get('/faculties', academicController.getFaculties);
