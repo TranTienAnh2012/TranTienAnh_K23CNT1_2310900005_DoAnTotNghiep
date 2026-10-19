@@ -35,7 +35,7 @@ export default function Sidebar() {
       items: [
         { to: '/admin/students', label: 'Quản lý Sinh viên', icon: GraduationCap },
         { to: '/admin/teachers', label: 'Quản lý Giảng viên', icon: Users },
-        { to: '/admin/face-registration', label: 'Đăng ký Khuôn mặt (Face AI)', icon: Camera },
+        { to: '/admin/face-registration', label: 'Đăng ký Khuôn mặt-Face AI', icon: Camera },
         { to: '/admin/accounts', label: 'Tài khoản Hệ thống', icon: KeyRound }
       ]
     },
@@ -107,10 +107,9 @@ export default function Sidebar() {
                     to={item.to}
                     end={item.to === '/admin'}
                     className={({ isActive }) =>
-                      `flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
-                        isActive
-                          ? 'bg-blue-600/15 text-blue-400 border-l-4 border-blue-500 shadow-sm'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border-l-4 border-transparent'
+                      `flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${isActive
+                        ? 'bg-blue-600/15 text-blue-400 border-l-4 border-blue-500 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border-l-4 border-transparent'
                       }`
                     }
                   >
@@ -134,10 +133,9 @@ export default function Sidebar() {
                   to={item.to}
                   end={item.to === '/teacher' || item.to === '/student'}
                   className={({ isActive }) =>
-                    `flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-                      isActive
-                        ? 'bg-blue-600/15 text-blue-400 border-l-4 border-blue-500 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border-l-4 border-transparent'
+                    `flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${isActive
+                      ? 'bg-blue-600/15 text-blue-400 border-l-4 border-blue-500 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border-l-4 border-transparent'
                     }`
                   }
                 >

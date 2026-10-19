@@ -3,7 +3,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.endpoints import router as endpoints_router
-from app.api.routes import router as core_routes_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -20,11 +19,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Gắn router
+# Gắn router API chính thức (Stateless - Sử dụng trực tiếp vector từ MySQL)
 app.include_router(endpoints_router)
 app.include_router(endpoints_router, prefix="/api")
-app.include_router(core_routes_router)
-app.include_router(core_routes_router, prefix="/api")
 
 
 @app.get("/health", tags=["System"])
