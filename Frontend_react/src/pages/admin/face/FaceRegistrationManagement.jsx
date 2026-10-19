@@ -21,8 +21,11 @@ import {
   Loader2,
   UserCheck
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { adminService } from '../../../services/adminService';
+
+// Thời gian giữ cố định góc mặt và khoảng nghỉ chụp hợp lý
+const HOLD_DURATION_MS = 2500; // Giữ cố định 2.5 giây để chụp chuẩn nét
+const COOLDOWN_BETWEEN_CAPTURES_MS = 2000; // Nghỉ 2 giây giữa 2 góc chụp để người dùng kịp đọc chỉ dẫn mới
 
 export const ANGLES_CONFIG = [
   {
@@ -104,7 +107,7 @@ export default function FaceRegistrationManagement() {
   // Auto-scan & Angle state
   const [activeStep, setActiveStep] = useState(0);
   const activeStepRef = useRef(0);
-  const holdCounterRef = useRef(0);
+  const targetHoldStartTimeRef = useRef(0);
   const lastCaptureTimeRef = useRef(0);
   const [autoScanEnabled, setAutoScanEnabled] = useState(true);
   const autoScanEnabledRef = useRef(true);
@@ -136,6 +139,7 @@ export default function FaceRegistrationManagement() {
     roll: 0,
     isTargetMet: false,
     progress: 0,
+    remainSec: '2.5'
   });
 
   // Operation statuses
@@ -150,7 +154,7 @@ export default function FaceRegistrationManagement() {
   // Sync refs
   useEffect(() => {
     activeStepRef.current = activeStep;
-    holdCounterRef.current = 0;
+    targetHoldStartTimeRef.current = 0;
   }, [activeStep]);
 
   useEffect(() => {
@@ -182,32 +186,23 @@ export default function FaceRegistrationManagement() {
     loadAll();
   }, []);
 
-  // Khi chọn một người dùng
+  // Khi chọn một người dùng: Chuẩn bị quét mới 5 góc (Không tự lấy avatar làm ảnh mẫu góc 1)
   const handleSelectPerson = (person) => {
     setSelectedPerson(person);
     setNotice(null);
     setAiQualityResult(null);
     setActiveStep(0);
     activeStepRef.current = 0;
-    holdCounterRef.current = 0;
+    targetHoldStartTimeRef.current = 0;
 
-    // Reset captured images và load avatar hiện tại nếu có
-    const initialCaptures = {
+    // Khởi tạo trạng thái chụp mới tinh
+    setCapturedImages({
       straight: null,
       left: null,
       right: null,
       up: null,
       down: null,
-    };
-
-    if (person.avatar_url) {
-      const avatarFull = person.avatar_url.startsWith('http')
-        ? person.avatar_url
-        : `http://localhost:5000${person.avatar_url}`;
-      initialCaptures.straight = { previewUrl: avatarFull, existing: true };
-    }
-
-    setCapturedImages(initialCaptures);
+    });
   };
 
   // Reset khi đổi tab sinh viên / giảng viên
@@ -463,7 +458,19 @@ export default function FaceRegistrationManagement() {
       isTargetMet = (pose === 'LOOK_DOWN' || pitchDeg <= -9) && pitchDeg < -3;
     }
 
-    const holdRatio = Math.min(100, Math.round((holdCounterRef.current / 4) * 100));
+    let holdRatio = 0;
+    let remainSec = (HOLD_DURATION_MS / 1000).toFixed(1);
+
+    if (isTargetMet) {
+      if (!targetHoldStartTimeRef.current) {
+        targetHoldStartTimeRef.current = Date.now();
+      }
+      const elapsed = Date.now() - targetHoldStartTimeRef.current;
+      holdRatio = Math.min(100, Math.round((elapsed / HOLD_DURATION_MS) * 100));
+      remainSec = Math.max(0, (HOLD_DURATION_MS - elapsed) / 1000).toFixed(1);
+    } else {
+      targetHoldStartTimeRef.current = 0;
+    }
 
     setTelemetry({
       yaw: yawDeg,
@@ -471,6 +478,7 @@ export default function FaceRegistrationManagement() {
       roll: rollDeg,
       isTargetMet,
       progress: isTargetMet ? holdRatio : 0,
+      remainSec,
     });
 
     const poseDict = {
@@ -617,7 +625,7 @@ export default function FaceRegistrationManagement() {
 
     // 5. Top badge
     const badgeH = 34;
-    const badgeW = Math.max(240, boxW * 1.05);
+    const badgeW = Math.max(260, boxW * 1.05);
     const badgeX = boxX + (boxW - badgeW) / 2;
     const badgeY = boxY - badgeH - 10;
 
@@ -639,7 +647,7 @@ export default function FaceRegistrationManagement() {
     ctx.textAlign = 'center';
 
     if (isTargetMet) {
-      ctx.fillText(`✨ ĐÃ ĐẠT: ${currentAngle.label} (${holdRatio}%)`, badgeX + badgeW / 2, badgeY + 22);
+      ctx.fillText(`🎯 GIỮ CỐ ĐỊNH (${remainSec}s): ${currentAngle.label} (${holdRatio}%)`, badgeX + badgeW / 2, badgeY + 22);
     } else {
       ctx.fillText(`${poseInfo.icon} ${poseInfo.text} • CẦN: ${currentAngle.label}`, badgeX + badgeW / 2, badgeY + 22);
     }
@@ -647,15 +655,16 @@ export default function FaceRegistrationManagement() {
     ctx.restore();
   };
 
-  // AUTO-CAPTURE ON TARGET HOLD
+  // AUTO-CAPTURE ON TARGET HOLD: Giữ cố định 2.5 giây để chụp chuẩn nét
   const handleAutoCaptureEvaluation = (data) => {
     if (!autoScanEnabledRef.current || !data.face_detected || !data.pose) {
-      holdCounterRef.current = 0;
+      targetHoldStartTimeRef.current = 0;
       return;
     }
 
-    if (Date.now() - lastCaptureTimeRef.current < 850) {
-      holdCounterRef.current = 0;
+    // Khoảng dừng 2 giây giữa 2 góc chụp để người dùng kịp đọc chỉ dẫn góc mới
+    if (Date.now() - lastCaptureTimeRef.current < COOLDOWN_BETWEEN_CAPTURES_MS) {
+      targetHoldStartTimeRef.current = 0;
       return;
     }
 
@@ -678,14 +687,17 @@ export default function FaceRegistrationManagement() {
     }
 
     if (isTargetMet) {
-      holdCounterRef.current++;
-      if (holdCounterRef.current >= 4) {
+      if (!targetHoldStartTimeRef.current) {
+        targetHoldStartTimeRef.current = Date.now();
+      }
+      const elapsed = Date.now() - targetHoldStartTimeRef.current;
+      if (elapsed >= HOLD_DURATION_MS) {
+        targetHoldStartTimeRef.current = 0;
         lastCaptureTimeRef.current = Date.now();
-        holdCounterRef.current = 0;
         triggerCaptureCurrentAngle();
       }
     } else {
-      holdCounterRef.current = 0;
+      targetHoldStartTimeRef.current = 0;
     }
   };
 
@@ -693,7 +705,7 @@ export default function FaceRegistrationManagement() {
   const triggerCaptureCurrentAngle = () => {
     if (!videoRef.current) return;
     lastCaptureTimeRef.current = Date.now();
-    holdCounterRef.current = 0;
+    targetHoldStartTimeRef.current = 0;
     const currentStepIndex = activeStepRef.current;
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
@@ -715,12 +727,6 @@ export default function FaceRegistrationManagement() {
         ...prev,
         [angleKey]: { blob, previewUrl },
       }));
-
-      confetti({
-        particleCount: 40,
-        spread: 60,
-        origin: { y: 0.65 },
-      });
 
       if (currentStepIndex < 4) {
         const nextStep = currentStepIndex + 1;
@@ -786,18 +792,11 @@ export default function FaceRegistrationManagement() {
         });
         setAiQualityResult(res.data?.quality || { brightness: 125, blur_score: 92 });
 
-        confetti({
-          particleCount: 160,
-          spread: 90,
-          origin: { y: 0.5 },
-        });
-
         await loadAll();
-        // Cập nhật lại person đang chọn
+        // Cập nhật lại person đang chọn (không ghi đè avatar_url, avatar do người dùng tự đặt)
         setSelectedPerson((prev) => ({
           ...prev,
           face_embedding: 'exists',
-          avatar_url: res.data?.avatar_url || prev.avatar_url,
           has_face_registered: true,
         }));
       } else {
@@ -890,7 +889,6 @@ export default function FaceRegistrationManagement() {
               quality: data.quality,
               message: `Khuôn mặt hợp lệ! Trùng khớp với định danh của ${selectedPerson?.ho_ten || 'người dùng'}.`,
             });
-            confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
           } else {
             setTestResult({
               success: false,
@@ -1368,7 +1366,7 @@ export default function FaceRegistrationManagement() {
                     {/* Instruction Banner at top */}
                     <div className="absolute top-2 px-3 py-1 rounded-full bg-slate-900/85 border border-white/15 text-white text-[11px] font-bold flex items-center gap-1.5 pointer-events-none">
                       <currentAngleObj.icon size={13} color={telemetry.isTargetMet ? '#34d399' : '#38bdf8'} />
-                      <span>{telemetry.isTargetMet ? 'Đúng vị trí! Giữ nguyên để tự chụp...' : currentAngleObj.instruction}</span>
+                      <span>{telemetry.isTargetMet ? `Đúng vị trí! Giữ cố định ${telemetry.remainSec || '2.5'}s để tự chụp...` : currentAngleObj.instruction}</span>
                     </div>
 
                     {/* Realtime Pose Status Pill at bottom right */}

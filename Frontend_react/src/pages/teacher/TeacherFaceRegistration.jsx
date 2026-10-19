@@ -21,8 +21,11 @@ import {
   Trash2,
   Loader2
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { teacherService } from '../../services/teacherService';
+
+// Thời gian giữ cố định góc mặt và khoảng nghỉ chụp hợp lý
+const HOLD_DURATION_MS = 2500; // Giữ cố định 2.5 giây để chụp chuẩn nét
+const COOLDOWN_BETWEEN_CAPTURES_MS = 2000; // Nghỉ 2 giây giữa 2 góc chụp để người dùng kịp đọc chỉ dẫn mới
 
 export const ANGLES_CONFIG = [
   {
@@ -93,7 +96,7 @@ export default function TeacherFaceRegistration() {
   // Auto-scan & Angle state
   const [activeStep, setActiveStep] = useState(0);
   const activeStepRef = useRef(0);
-  const holdCounterRef = useRef(0);
+  const targetHoldStartTimeRef = useRef(0);
   const lastCaptureTimeRef = useRef(0);
   const [autoScanEnabled, setAutoScanEnabled] = useState(true);
   const autoScanEnabledRef = useRef(true);
@@ -125,6 +128,7 @@ export default function TeacherFaceRegistration() {
     roll: 0,
     isTargetMet: false,
     progress: 0,
+    remainSec: '2.5'
   });
 
   // Operation statuses
@@ -139,29 +143,20 @@ export default function TeacherFaceRegistration() {
   // Sync refs
   useEffect(() => {
     activeStepRef.current = activeStep;
-    holdCounterRef.current = 0;
+    targetHoldStartTimeRef.current = 0;
   }, [activeStep]);
 
   useEffect(() => {
     autoScanEnabledRef.current = autoScanEnabled;
   }, [autoScanEnabled]);
 
-  // Load Teacher Profile
+  // Load Teacher Profile (Không lấy avatar làm ảnh mẫu khuôn mặt góc 1)
   const loadProfile = async () => {
     try {
       setLoadingProfile(true);
       const res = await teacherService.getMyProfile();
       if (res.success && res.data) {
         setProfile(res.data);
-        if (res.data.avatar_url) {
-          const avatarFull = res.data.avatar_url.startsWith('http')
-            ? res.data.avatar_url
-            : `http://localhost:5000${res.data.avatar_url}`;
-          setCapturedImages((prev) => ({
-            ...prev,
-            straight: prev.straight || { previewUrl: avatarFull, existing: true }
-          }));
-        }
       }
     } catch (err) {
       console.warn('Lỗi lấy hồ sơ giảng viên:', err);
@@ -411,7 +406,19 @@ export default function TeacherFaceRegistration() {
       isTargetMet = (pose === 'LOOK_DOWN' || pitchDeg <= -9) && pitchDeg < -3;
     }
 
-    const holdRatio = Math.min(100, Math.round((holdCounterRef.current / 4) * 100));
+    let holdRatio = 0;
+    let remainSec = (HOLD_DURATION_MS / 1000).toFixed(1);
+
+    if (isTargetMet) {
+      if (!targetHoldStartTimeRef.current) {
+        targetHoldStartTimeRef.current = Date.now();
+      }
+      const elapsed = Date.now() - targetHoldStartTimeRef.current;
+      holdRatio = Math.min(100, Math.round((elapsed / HOLD_DURATION_MS) * 100));
+      remainSec = Math.max(0, (HOLD_DURATION_MS - elapsed) / 1000).toFixed(1);
+    } else {
+      targetHoldStartTimeRef.current = 0;
+    }
 
     setTelemetry({
       yaw: yawDeg,
@@ -419,6 +426,7 @@ export default function TeacherFaceRegistration() {
       roll: rollDeg,
       isTargetMet,
       progress: isTargetMet ? holdRatio : 0,
+      remainSec,
     });
 
     const poseDict = {
@@ -588,7 +596,7 @@ export default function TeacherFaceRegistration() {
 
     if (isTargetMet) {
       ctx.fillText(
-        `✨ ĐÃ ĐẠT GÓC: ${currentAngle.label} (${holdRatio}%)`,
+        `🎯 GIỮ CỐ ĐỊNH (${remainSec}s): ${currentAngle.label} (${holdRatio}%)`,
         badgeX + badgeW / 2,
         badgeY + 22
       );
@@ -603,15 +611,16 @@ export default function TeacherFaceRegistration() {
     ctx.restore();
   };
 
-  // --- AUTO-CAPTURE ON TARGET HOLD ---
+  // --- AUTO-CAPTURE ON TARGET HOLD: Giữ cố định 2.5s ---
   const handleAutoCaptureEvaluation = (data) => {
     if (!autoScanEnabledRef.current || !data.face_detected || !data.pose) {
-      holdCounterRef.current = 0;
+      targetHoldStartTimeRef.current = 0;
       return;
     }
 
-    if (Date.now() - lastCaptureTimeRef.current < 850) {
-      holdCounterRef.current = 0;
+    // Khoảng dừng 2 giây giữa 2 góc chụp để giảng viên kịp đọc chỉ dẫn mới
+    if (Date.now() - lastCaptureTimeRef.current < COOLDOWN_BETWEEN_CAPTURES_MS) {
+      targetHoldStartTimeRef.current = 0;
       return;
     }
 
@@ -634,14 +643,17 @@ export default function TeacherFaceRegistration() {
     }
 
     if (isTargetMet) {
-      holdCounterRef.current++;
-      if (holdCounterRef.current >= 4) {
+      if (!targetHoldStartTimeRef.current) {
+        targetHoldStartTimeRef.current = Date.now();
+      }
+      const elapsed = Date.now() - targetHoldStartTimeRef.current;
+      if (elapsed >= HOLD_DURATION_MS) {
+        targetHoldStartTimeRef.current = 0;
         lastCaptureTimeRef.current = Date.now();
-        holdCounterRef.current = 0;
         triggerCaptureCurrentAngle();
       }
     } else {
-      holdCounterRef.current = 0;
+      targetHoldStartTimeRef.current = 0;
     }
   };
 
@@ -649,7 +661,7 @@ export default function TeacherFaceRegistration() {
   const triggerCaptureCurrentAngle = () => {
     if (!videoRef.current) return;
     lastCaptureTimeRef.current = Date.now();
-    holdCounterRef.current = 0;
+    targetHoldStartTimeRef.current = 0;
     const currentStepIndex = activeStepRef.current;
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
@@ -672,13 +684,6 @@ export default function TeacherFaceRegistration() {
         ...prev,
         [angleKey]: { blob, previewUrl },
       }));
-
-      // Particle celebration
-      confetti({
-        particleCount: 45,
-        spread: 60,
-        origin: { y: 0.65 },
-      });
 
       // Auto-advance to next step
       if (currentStepIndex < 4) {
@@ -737,12 +742,6 @@ export default function TeacherFaceRegistration() {
         });
         setAiQualityResult(res.data?.quality || { brightness: 125, blur_score: 92 });
 
-        confetti({
-          particleCount: 160,
-          spread: 90,
-          origin: { y: 0.5 },
-        });
-
         loadProfile();
       } else {
         setNotice({
@@ -800,7 +799,6 @@ export default function TeacherFaceRegistration() {
               quality: data.quality,
               message: 'Khuôn mặt hợp lệ! Trùng khớp với định danh Giảng viên.'
             });
-            confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
           } else {
             setTestResult({
               success: false,
@@ -1148,7 +1146,7 @@ export default function TeacherFaceRegistration() {
               boxShadow: '0 4px 6px -1px rgba(0,0,0,0.3)'
             }}>
               <currentAngleObj.icon size={14} color={telemetry.isTargetMet ? '#ffffff' : '#38bdf8'} />
-              <span>{telemetry.isTargetMet ? 'Đúng vị trí! Giữ nguyên để tự chụp...' : currentAngleObj.instruction}</span>
+              <span>{telemetry.isTargetMet ? `Đúng vị trí! Giữ cố định ${telemetry.remainSec || '2.5'}s để tự chụp...` : currentAngleObj.instruction}</span>
             </div>
 
             {/* Realtime Pose Status Pill at bottom right */}

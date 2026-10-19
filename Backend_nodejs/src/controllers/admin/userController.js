@@ -722,16 +722,15 @@ const userController = {
       const embeddingJson = JSON.stringify(aiResult.embedding);
       await pool.execute(
         `UPDATE sinh_vien 
-         SET avatar_url = ?, face_embedding = ?, face_updated_at = NOW() 
+         SET face_embedding = ?, face_updated_at = NOW() 
          WHERE id = ?`,
-        [avatarRelativePath, embeddingJson, id]
+        [embeddingJson, id]
       );
 
       return res.status(200).json({
         success: true,
         message: `Đăng ký dữ liệu khuôn mặt cho sinh viên ${students[0].ho_ten} (${students[0].ma_sv}) thành công!`,
         data: {
-          avatar_url: avatarRelativePath,
           quality: aiResult.quality,
           face_updated_at: new Date()
         }
@@ -783,16 +782,15 @@ const userController = {
       const embeddingJson = JSON.stringify(aiResult.embedding);
       await pool.execute(
         `UPDATE giang_vien 
-         SET avatar_url = ?, face_embedding = ?, face_updated_at = NOW() 
+         SET face_embedding = ?, face_updated_at = NOW() 
          WHERE id = ?`,
-        [avatarRelativePath, embeddingJson, id]
+        [embeddingJson, id]
       );
 
       return res.status(200).json({
         success: true,
         message: `Đăng ký dữ liệu khuôn mặt cho giảng viên ${teachers[0].ho_ten} (${teachers[0].ma_gv}) thành công!`,
         data: {
-          avatar_url: avatarRelativePath,
           quality: aiResult.quality,
           face_updated_at: new Date()
         }

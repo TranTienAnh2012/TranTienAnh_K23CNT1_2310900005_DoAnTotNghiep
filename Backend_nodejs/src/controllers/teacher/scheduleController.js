@@ -48,20 +48,19 @@ const scheduleController = {
         });
       }
 
-      // 2. Lưu avatar_url và face_embedding (JSON) vào bảng giang_vien
+      // 2. Lưu face_embedding (JSON) vào bảng giang_vien (Không ghi đè avatar_url)
       const embeddingJson = JSON.stringify(aiResult.embedding);
       await pool.execute(
         `UPDATE giang_vien 
-         SET avatar_url = ?, face_embedding = ?, face_updated_at = NOW() 
+         SET face_embedding = ?, face_updated_at = NOW() 
          WHERE id = ?`,
-        [avatarRelativePath, embeddingJson, teacherId]
+        [embeddingJson, teacherId]
       );
 
       return res.status(200).json({
         success: true,
         message: 'Đăng ký khuôn mặt giảng viên thành công!',
         data: {
-          avatar_url: avatarRelativePath,
           quality: aiResult.quality,
           face_updated_at: new Date()
         }
