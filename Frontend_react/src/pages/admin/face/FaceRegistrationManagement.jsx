@@ -1499,90 +1499,102 @@ export default function FaceRegistrationManagement() {
 
               {/* TAB 1: LIVE 3D FACEID CAMERA */}
               {tabMode === 'camera' && (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
-                  {/* Viewport Canvas Container (7 Cột khi bình thường, 8 Cột & cao 390px khi thu gọn danh sách) */}
+                <div
+                  className={`grid grid-cols-1 gap-4 items-stretch transition-all duration-300 ${
+                    isListExpanded ? 'md:grid-cols-12' : 'md:grid-cols-12 max-w-5xl mx-auto w-full'
+                  }`}
+                >
+                  {/* Viewport Canvas Container: Luôn giữ tỉ lệ hình vuông chuẩn nhận diện sinh trắc học FaceID */}
                   <div
                     className={`${
-                      isListExpanded ? 'md:col-span-7 h-[310px]' : 'md:col-span-8 h-[390px]'
-                    } relative bg-slate-950 rounded-2xl overflow-hidden border-2 border-slate-800 flex items-center justify-center transition-all duration-300`}
+                      isListExpanded
+                        ? 'md:col-span-7 flex justify-center items-center'
+                        : 'md:col-span-6 flex justify-center items-center'
+                    }`}
                   >
-                    <video
-                      ref={videoRef}
-                      className="w-full h-full object-cover scale-x-[-1]"
-                      playsInline
-                      muted
-                      autoPlay
-                    />
-                    <canvas
-                      ref={overlayCanvasRef}
-                      className="absolute inset-0 w-full h-full pointer-events-none"
-                    />
-                    <canvas ref={canvasRef} className="hidden" />
+                    <div
+                      className={`relative w-full aspect-square bg-slate-950 rounded-3xl overflow-hidden border-2 border-slate-800 flex items-center justify-center shadow-md transition-all duration-300 ${
+                        isListExpanded ? 'max-w-[340px]' : 'max-w-[480px]'
+                      }`}
+                    >
+                      <video
+                        ref={videoRef}
+                        className="w-full h-full object-cover scale-x-[-1]"
+                        playsInline
+                        muted
+                        autoPlay
+                      />
+                      <canvas
+                        ref={overlayCanvasRef}
+                        className="absolute inset-0 w-full h-full pointer-events-none"
+                      />
+                      <canvas ref={canvasRef} className="hidden" />
 
-                    {/* Instruction Banner at top */}
-                    <div className="absolute top-2 px-3 py-1 rounded-full bg-slate-900/85 border border-white/15 text-white text-[11px] font-bold flex items-center gap-1.5 pointer-events-none">
-                      <currentAngleObj.icon size={13} color={telemetry.isTargetMet ? '#34d399' : '#38bdf8'} />
-                      <span>{telemetry.isTargetMet ? `Đúng vị trí! Giữ cố định ${telemetry.remainSec || '2.5'}s để tự chụp...` : currentAngleObj.instruction}</span>
-                    </div>
-
-                    {/* Realtime Pose Status Pill at bottom right */}
-                    <div className="absolute bottom-2 right-2 pointer-events-none">
-                      <div
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                          faceInFrame
-                            ? telemetry.isTargetMet
-                              ? 'bg-emerald-900/90 text-emerald-300 border-emerald-500'
-                              : 'bg-slate-900/90 text-slate-200 border-white/20'
-                            : 'bg-rose-950/90 text-rose-300 border-rose-600'
-                        }`}
-                      >
-                        {currentDetectedPose}
+                      {/* Instruction Banner at top */}
+                      <div className="absolute top-2.5 px-3.5 py-1.5 rounded-full bg-slate-900/85 border border-white/15 text-white text-[11px] font-bold flex items-center gap-1.5 pointer-events-none backdrop-blur-xs max-w-[90%]">
+                        <currentAngleObj.icon size={13} color={telemetry.isTargetMet ? '#34d399' : '#38bdf8'} />
+                        <span className="truncate">{telemetry.isTargetMet ? `Đúng vị trí! Giữ cố định ${telemetry.remainSec || '2.5'}s để tự chụp...` : currentAngleObj.instruction}</span>
                       </div>
-                    </div>
 
-                    {/* Telemetry Indicator Bars at bottom left */}
-                    <div className="absolute bottom-2 left-2 flex gap-2 bg-slate-900/85 px-2.5 py-1 rounded-lg border border-white/10 font-mono text-[9px] text-slate-400 pointer-events-none">
-                      <span>Yaw: <b className="text-sky-300">{telemetry.yaw}°</b></span>
-                      <span>Pitch: <b className="text-amber-300">{telemetry.pitch}°</b></span>
+                      {/* Realtime Pose Status Pill at bottom right */}
+                      <div className="absolute bottom-2.5 right-2.5 pointer-events-none">
+                        <div
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border backdrop-blur-xs ${
+                            faceInFrame
+                              ? telemetry.isTargetMet
+                                ? 'bg-emerald-900/90 text-emerald-300 border-emerald-500'
+                                : 'bg-slate-900/90 text-slate-200 border-white/20'
+                              : 'bg-rose-950/90 text-rose-300 border-rose-600'
+                          }`}
+                        >
+                          {currentDetectedPose}
+                        </div>
+                      </div>
+
+                      {/* Telemetry Indicator Bars at bottom left */}
+                      <div className="absolute bottom-2.5 left-2.5 flex gap-2 bg-slate-900/85 px-2.5 py-1 rounded-lg border border-white/10 font-mono text-[9px] text-slate-400 pointer-events-none backdrop-blur-xs">
+                        <span>Yaw: <b className="text-sky-300">{telemetry.yaw}°</b></span>
+                        <span>Pitch: <b className="text-amber-300">{telemetry.pitch}°</b></span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Step Guidance & Snapshot Preview (5 Cột khi bình thường, 4 Cột khi thu gọn danh sách) */}
+                  {/* Step Guidance & Snapshot Preview (Cân xứng với khung camera hình vuông) */}
                   <div
                     className={`${
-                      isListExpanded ? 'md:col-span-5' : 'md:col-span-4'
-                    } bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col justify-between gap-2.5 transition-all duration-300`}
+                      isListExpanded ? 'md:col-span-5 p-3.5' : 'md:col-span-6 p-5'
+                    } bg-slate-50 rounded-3xl border border-slate-200/80 flex flex-col justify-between gap-3 transition-all duration-300`}
                   >
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                          <currentAngleObj.icon size={18} />
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                          <currentAngleObj.icon size={20} />
                         </div>
                         <div>
-                          <h4 className="text-xs font-extrabold text-slate-800">{currentAngleObj.label}</h4>
+                          <h4 className="text-xs sm:text-sm font-extrabold text-slate-800">{currentAngleObj.label}</h4>
                           <p className="text-[11px] text-slate-500 leading-tight">{currentAngleObj.desc}</p>
                         </div>
                       </div>
 
                       {/* Snapshot thumbnail */}
                       {capturedImages[currentAngleObj.key] ? (
-                        <div className="p-2 bg-white rounded-xl border border-slate-200 flex items-center gap-2.5">
+                        <div className="p-2.5 bg-white rounded-2xl border border-slate-200 flex items-center gap-3">
                           <img
                             src={capturedImages[currentAngleObj.key]?.previewUrl}
                             alt={currentAngleObj.key}
-                            className="w-14 h-14 rounded-lg object-cover border-2 border-emerald-500 shrink-0"
+                            className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-500 shrink-0"
                           />
                           <div>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
+                            <span className="px-2.5 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
                               ✓ ĐÃ LƯU ẢNH
                             </span>
-                            <div className="text-[10px] text-slate-400 mt-1">
+                            <div className="text-[11px] text-slate-400 mt-1">
                               Có thể bấm chụp lại để cập nhật góc này.
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="p-3 rounded-xl bg-white border border-dashed border-slate-300 text-center text-[11px] text-slate-500">
+                        <div className="p-3.5 rounded-2xl bg-white border border-dashed border-slate-300 text-center text-xs text-slate-500">
                           {autoScanEnabled
                             ? 'AI sẽ tự động chụp khi người dùng xoay đầu đúng góc.'
                             : 'Bấm nút "Chụp Ngay Góc Này" khi đã căn chuẩn góc.'}
@@ -1591,13 +1603,13 @@ export default function FaceRegistrationManagement() {
 
                       {/* Progress bar of current angle */}
                       <div>
-                        <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+                        <div className="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
                           <span>Giữ góc mục tiêu</span>
-                          <span>{telemetry.progress}%</span>
+                          <span className="text-emerald-600 font-extrabold">{telemetry.progress}%</span>
                         </div>
-                        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-emerald-500 transition-all duration-150"
+                            className="h-full bg-emerald-500 transition-all duration-150 rounded-full"
                             style={{ width: `${telemetry.progress}%` }}
                           />
                         </div>
@@ -1605,23 +1617,23 @@ export default function FaceRegistrationManagement() {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="space-y-1.5 pt-1">
+                    <div className="space-y-2 pt-2">
                       <button
                         type="button"
                         onClick={triggerCaptureCurrentAngle}
                         disabled={!isCameraActive}
-                        className="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
+                        className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 disabled:opacity-50 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
                       >
-                        <Camera size={14} />
+                        <Camera size={16} />
                         <span>{capturedImages[currentAngleObj.key] ? 'Chụp Lại Góc Này' : 'Chụp Ngay Góc Này'}</span>
                       </button>
 
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-2">
                         <button
                           type="button"
                           disabled={activeStep === 0}
                           onClick={() => setActiveStep(activeStep - 1)}
-                          className="flex-1 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-[11px] font-semibold hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                          className="flex-1 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
                         >
                           ← Góc trước
                         </button>
@@ -1629,7 +1641,7 @@ export default function FaceRegistrationManagement() {
                           type="button"
                           disabled={activeStep === 4}
                           onClick={() => setActiveStep(activeStep + 1)}
-                          className="flex-1 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-[11px] font-semibold hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                          className="flex-1 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
                         >
                           Góc tiếp →
                         </button>
