@@ -19,7 +19,8 @@ import {
   Search,
   Trash2,
   Loader2,
-  UserCheck
+  UserCheck,
+  RotateCcw
 } from 'lucide-react';
 import { adminService } from '../../../services/adminService';
 
@@ -815,10 +816,70 @@ export default function FaceRegistrationManagement() {
     }
   };
 
+  // ĐẶT LẠI PHIÊN QUÉT KHUÔN MẶT HIỆN TẠI (RESET 5 GÓC CHỤP TẠM THỜI)
+  const handleResetScanSession = () => {
+    setActiveStep(0);
+    activeStepRef.current = 0;
+    targetHoldStartTimeRef.current = 0;
+    lastCaptureTimeRef.current = 0;
+    setCapturedImages({
+      straight: null,
+      left: null,
+      right: null,
+      up: null,
+      down: null,
+    });
+    setTelemetry({
+      yaw: 0,
+      pitch: 0,
+      roll: 0,
+      isTargetMet: false,
+      progress: 0,
+      remainSec: '2.5'
+    });
+    setNotice({
+      type: 'info',
+      message: 'Đã đặt lại phiên quét! Bạn có thể bắt đầu chụp lại từ góc 1 (Chính diện).'
+    });
+  };
+
+  // ĐẶT LẠI TOÀN BỘ FACE AI (XÓA TRONG CSDL VÀ BẮT ĐẦU QUÉT LẠI MẪU MỚI)
+  const handleResetFaceAI = async () => {
+    if (!selectedPerson) return;
+    if (!window.confirm(`Bạn có chắc muốn đặt lại dữ liệu khuôn mặt của ${selectedPerson.ho_ten}? Mẫu Face AI cũ trong hệ thống sẽ được xóa để sẵn sàng quét mẫu mới.`)) return;
+
+    try {
+      setSubmitting(true);
+      let res;
+      if (activeTab === 'student') {
+        res = await adminService.deleteStudentFace(selectedPerson.id);
+      } else {
+        res = await adminService.deleteTeacherFace(selectedPerson.id);
+      }
+      if (res.success) {
+        setNotice({
+          type: 'success',
+          message: `Đã đặt lại dữ liệu khuôn mặt của ${selectedPerson.ho_ten}! Bạn có thể tiến hành quét lại mẫu mới ngay.`
+        });
+        handleResetScanSession();
+        await loadAll();
+        setSelectedPerson((prev) => ({
+          ...prev,
+          face_embedding: null,
+          has_face_registered: false,
+        }));
+      }
+    } catch (err) {
+      setNotice({ type: 'error', message: err.message || 'Lỗi khi đặt lại khuôn mặt.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // XÓA MẪU KHUÔN MẶT CỦA NGƯỜI ĐANG CHỌN
   const handleDeleteFace = async () => {
     if (!selectedPerson) return;
-    if (!window.confirm(`Bạn có chắc muốn xóa dữ liệu khuôn mặt của ${selectedPerson.ho_ten}?`)) return;
+    if (!window.confirm(`Bạn có chắc muốn xóa vĩnh viễn dữ liệu khuôn mặt của ${selectedPerson.ho_ten}?`)) return;
 
     try {
       setSubmitting(true);
@@ -830,13 +891,7 @@ export default function FaceRegistrationManagement() {
       }
       if (res.success) {
         setNotice({ type: 'success', message: 'Đã xóa dữ liệu khuôn mặt thành công!' });
-        setCapturedImages({
-          straight: null,
-          left: null,
-          right: null,
-          up: null,
-          down: null,
-        });
+        handleResetScanSession();
         await loadAll();
         setSelectedPerson((prev) => ({
           ...prev,
@@ -1218,18 +1273,50 @@ export default function FaceRegistrationManagement() {
                   </div>
                 </div>
 
-                {/* Nút xóa mẫu khuôn mặt khi đã có face */}
-                {hasFace && (
-                  <button
-                    type="button"
-                    onClick={handleDeleteFace}
-                    disabled={submitting}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition-colors cursor-pointer"
-                  >
-                    <Trash2 size={13} />
-                    <span>Xóa Face AI</span>
-                  </button>
-                )}
+                {/* Cụm nút thao tác khuôn mặt */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Nút đặt lại phiên quét tạm thời */}
+                  {capturedCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleResetScanSession}
+                      disabled={submitting}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                      title="Xóa 5 góc vừa chụp tạm thời để bắt đầu chụp lại từ đầu"
+                    >
+                      <RotateCcw size={13} />
+                      <span>Đặt lại phiên quét</span>
+                    </button>
+                  )}
+
+                  {/* Nút đặt lại dữ liệu Face AI (xóa mẫu cũ trong CSDL để đăng ký lại) */}
+                  {hasFace && (
+                    <button
+                      type="button"
+                      onClick={handleResetFaceAI}
+                      disabled={submitting}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                      title="Xóa vector 512D cũ và tiến hành đăng ký mới lại khuôn mặt"
+                    >
+                      <RotateCcw size={13} />
+                      <span>Đặt lại Face AI</span>
+                    </button>
+                  )}
+
+                  {/* Nút xóa vĩnh viễn mẫu khuôn mặt */}
+                  {hasFace && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteFace}
+                      disabled={submitting}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition-colors cursor-pointer"
+                      title="Xóa mẫu khuôn mặt của người dùng này"
+                    >
+                      <Trash2 size={13} />
+                      <span>Xóa Face AI</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Thông báo Notice */}
@@ -1638,24 +1725,39 @@ export default function FaceRegistrationManagement() {
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleSaveFaceProfile}
-                  disabled={submitting || capturedCount === 0}
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 disabled:opacity-50 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 size={16} className="spin" />
-                      <span>Đang trích xuất & lưu vector 512D...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check size={16} />
-                      <span>Lưu & Xác Nhận Hồ Sơ Khuôn Mặt</span>
-                    </>
+                <div className="flex items-center gap-2">
+                  {capturedCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleResetScanSession}
+                      disabled={submitting}
+                      className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                      title="Đặt lại các góc ảnh vừa chụp tạm thời để chụp lại từ đầu"
+                    >
+                      <RotateCcw size={15} />
+                      <span>Đặt lại quét</span>
+                    </button>
                   )}
-                </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveFaceProfile}
+                    disabled={submitting || capturedCount === 0}
+                    className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 disabled:opacity-50 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 size={16} className="spin" />
+                        <span>Đang trích xuất & lưu vector 512D...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check size={16} />
+                        <span>Lưu & Xác Nhận Hồ Sơ Khuôn Mặt</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
