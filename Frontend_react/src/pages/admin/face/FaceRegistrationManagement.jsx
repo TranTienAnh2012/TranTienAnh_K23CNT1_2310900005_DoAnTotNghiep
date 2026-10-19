@@ -295,11 +295,11 @@ export default function FaceRegistrationManagement() {
 
   // Client-side simulated HUD to ensure 60 FPS zero-lag rendering
   const generateClientBiometricHUD = (w, h) => {
-    // Tỉ lệ tối ưu mở rộng chuẩn nhân trắc học khuôn mặt để ôm trọn từ trán đến cằm
-    const boxW = Math.round(w * 0.50);
-    const boxH = Math.round(h * 0.68);
+    // Tỉ lệ kích thước khuôn mặt vừa vặn tự nhiên theo cự ly webcam bình thường
+    const boxW = Math.round(w * 0.32);
+    const boxH = Math.round(h * 0.44);
     const boxX = Math.round((w - boxW) / 2);
-    const boxY = Math.round((h - boxH) / 2.3);
+    const boxY = Math.round((h - boxH) / 2.2);
 
     const step = activeStepRef.current;
     let yaw = 0;
@@ -330,11 +330,11 @@ export default function FaceRegistrationManagement() {
         roll_deg: 0,
       },
       landmarks: {
-        right_eye: { x: boxX + boxW * 0.32, y: boxY + boxH * 0.40 },
-        left_eye: { x: boxX + boxW * 0.68, y: boxY + boxH * 0.40 },
-        nose_tip: { x: boxX + boxW * 0.50, y: boxY + boxH * 0.57 },
-        mouth_right: { x: boxX + boxW * 0.35, y: boxY + boxH * 0.77 },
-        mouth_left: { x: boxX + boxW * 0.65, y: boxY + boxH * 0.77 },
+        right_eye: { x: boxX + boxW * 0.30, y: boxY + boxH * 0.38 },
+        left_eye: { x: boxX + boxW * 0.70, y: boxY + boxH * 0.38 },
+        nose_tip: { x: boxX + boxW * 0.50, y: boxY + boxH * 0.55 },
+        mouth_right: { x: boxX + boxW * 0.34, y: boxY + boxH * 0.76 },
+        mouth_left: { x: boxX + boxW * 0.66, y: boxY + boxH * 0.76 },
       },
     };
   };
@@ -439,13 +439,11 @@ export default function FaceRegistrationManagement() {
 
     setFaceInFrame(true);
     const rawBox = data.bbox;
-    // Mở rộng thông minh bbox (padding 16% chiều rộng và 22% chiều cao) để khung Biometric HUD và lưới 3D ôm trọn từ trán đến cằm và 2 bên má ở mọi cự ly xa gần
-    const padX = rawBox.width * 0.16;
-    const padY = rawBox.height * 0.22;
-    const boxW = rawBox.width + padX * 2;
-    const boxH = rawBox.height + padY * 2;
-    const boxX = overlay.width - (rawBox.x + rawBox.width + padX);
-    const boxY = Math.max(0, rawBox.y - padY * 1.2);
+    // Sử dụng trực tiếp BoundingBox chuẩn từ YuNet AI detector để vừa vặn khuôn mặt, không bị quá rộng
+    const boxW = rawBox.width;
+    const boxH = rawBox.height;
+    const boxX = overlay.width - (rawBox.x + boxW);
+    const boxY = rawBox.y;
 
     const pose = data.pose ? data.pose.pose : 'STRAIGHT';
     const yawDeg = data.pose?.yaw_deg ?? 0;
@@ -532,7 +530,7 @@ export default function FaceRegistrationManagement() {
       ctx.stroke();
     }
 
-    // 2. 3D Vector Wireframe Mesh
+    // 2. 3D Vector Wireframe Mesh ôm vừa vặn khuôn mặt
     if (showMesh && data.landmarks) {
       const lm = data.landmarks;
       const mirrorX = (rawX) => overlay.width - rawX;
@@ -543,17 +541,17 @@ export default function FaceRegistrationManagement() {
       const mr = { x: mirrorX(lm.mouth_right.x), y: lm.mouth_right.y };
       const ml = { x: mirrorX(lm.mouth_left.x), y: lm.mouth_left.y };
 
-      const foreheadL = { x: boxX + boxW * 0.72, y: boxY + boxH * 0.1 };
-      const foreheadR = { x: boxX + boxW * 0.28, y: boxY + boxH * 0.1 };
-      const foreheadMid = { x: boxX + boxW * 0.5, y: boxY + boxH * 0.04 };
-      const templeL = { x: boxX + boxW * 0.94, y: boxY + boxH * 0.28 };
-      const templeR = { x: boxX + boxW * 0.06, y: boxY + boxH * 0.28 };
-      const cheekL = { x: boxX + boxW * 0.9, y: boxY + boxH * 0.62 };
-      const cheekR = { x: boxX + boxW * 0.1, y: boxY + boxH * 0.62 };
-      const jawL = { x: boxX + boxW * 0.76, y: boxY + boxH * 0.92 };
-      const jawR = { x: boxX + boxW * 0.24, y: boxY + boxH * 0.92 };
-      const chin = { x: boxX + boxW * 0.5, y: boxY + boxH * 0.99 };
-      const noseBridge = { x: (re.x + le.x) / 2, y: (re.y + le.y) / 2 - boxH * 0.04 };
+      const foreheadL = { x: boxX + boxW * 0.70, y: boxY + boxH * 0.05 };
+      const foreheadR = { x: boxX + boxW * 0.30, y: boxY + boxH * 0.05 };
+      const foreheadMid = { x: boxX + boxW * 0.50, y: boxY + boxH * 0.01 };
+      const templeL = { x: boxX + boxW * 0.94, y: boxY + boxH * 0.25 };
+      const templeR = { x: boxX + boxW * 0.06, y: boxY + boxH * 0.25 };
+      const cheekL = { x: boxX + boxW * 0.90, y: boxY + boxH * 0.58 };
+      const cheekR = { x: boxX + boxW * 0.10, y: boxY + boxH * 0.58 };
+      const jawL = { x: boxX + boxW * 0.78, y: boxY + boxH * 0.88 };
+      const jawR = { x: boxX + boxW * 0.22, y: boxY + boxH * 0.88 };
+      const chin = { x: boxX + boxW * 0.50, y: boxY + boxH * 0.98 };
+      const noseBridge = { x: (re.x + le.x) / 2, y: (re.y + le.y) / 2 };
 
       const meshLines = [
         [foreheadMid, foreheadL], [foreheadMid, foreheadR],
@@ -1517,8 +1515,8 @@ export default function FaceRegistrationManagement() {
                     }`}
                   >
                     <div
-                      className={`relative w-full aspect-square bg-slate-950 rounded-3xl overflow-hidden border-2 border-slate-800 flex items-center justify-center shadow-xl transition-all duration-300 ${
-                        isListExpanded ? 'max-w-[340px]' : 'max-w-[620px] xl:max-w-[660px]'
+                      className={`relative w-full aspect-[4/3] bg-slate-950 rounded-3xl overflow-hidden border-2 border-slate-800 flex items-center justify-center shadow-xl transition-all duration-300 ${
+                        isListExpanded ? 'max-w-[420px]' : 'max-w-[620px] xl:max-w-[660px]'
                       }`}
                     >
                       <video
