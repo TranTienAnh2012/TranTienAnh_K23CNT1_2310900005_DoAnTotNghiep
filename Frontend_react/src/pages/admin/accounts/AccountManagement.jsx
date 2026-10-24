@@ -148,6 +148,7 @@ export default function AccountManagement() {
   // Thống kê nhanh
   const totalCount = users.length;
   const teacherCount = users.filter((u) => u.role === 'teacher').length;
+  const facultyManagerCount = users.filter((u) => u.role === 'faculty_manager').length;
   const studentCount = users.filter((u) => u.role === 'student').length;
   const adminCount = users.filter((u) => u.role === 'admin').length;
   const activeCount = users.filter((u) => u.is_active).length;
@@ -159,6 +160,12 @@ export default function AccountManagement() {
         return (
           <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
             <Shield size={11} /> Admin
+          </span>
+        );
+      case 'faculty_manager':
+        return (
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+            <ShieldCheck size={11} /> Quản lý Khoa
           </span>
         );
       case 'teacher':
@@ -224,7 +231,7 @@ export default function AccountManagement() {
       render: (row) => roleBadge(row.role)
     },
     {
-      header: 'Khoa & Lớp',
+      header: 'Khoa & Lớp / Chức vụ',
       accessor: 'ten_khoa',
       render: (row) => (
         <div className="space-y-1">
@@ -232,6 +239,14 @@ export default function AccountManagement() {
             <Building2 size={11} className="shrink-0" />
             <span className="truncate">{row.ten_khoa || 'Hệ thống'}</span>
           </div>
+          {row.chuc_vu_khoa && (
+            <div>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[11px] font-semibold border border-purple-100">
+                <ShieldCheck size={10} className="shrink-0" />
+                {row.chuc_vu_khoa}
+              </span>
+            </div>
+          )}
           {row.ten_lop && (
             <div>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-100">
@@ -534,7 +549,7 @@ export default function AccountManagement() {
       </div>
 
       {/* Thống kê Tổng quan (Stats Grid) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3.5">
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <KeyRound size={20} />
@@ -552,6 +567,16 @@ export default function AccountManagement() {
           <div>
             <div className="text-xs font-medium text-slate-500">Giảng viên</div>
             <div className="text-xl font-bold text-indigo-700">{teacherCount}</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+            <ShieldCheck size={20} />
+          </div>
+          <div>
+            <div className="text-xs font-medium text-slate-500">Quản lý Khoa</div>
+            <div className="text-xl font-bold text-purple-700">{facultyManagerCount}</div>
           </div>
         </div>
 
@@ -631,6 +656,7 @@ export default function AccountManagement() {
             >
               <option value="all">-- Tất cả vai trò --</option>
               <option value="teacher">Giảng viên (Teacher)</option>
+              <option value="faculty_manager">Quản lý Khoa (Faculty Manager)</option>
               <option value="student">Sinh viên (Student)</option>
               <option value="admin">Quản trị viên (Admin)</option>
             </select>
@@ -643,7 +669,7 @@ export default function AccountManagement() {
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-              disabled={selectedRole === 'teacher' || selectedRole === 'admin'}
+              disabled={selectedRole === 'teacher' || selectedRole === 'admin' || selectedRole === 'faculty_manager'}
             >
               <option value="all">-- Tất cả các Lớp --</option>
               {availableClasses.map((c) => (

@@ -270,6 +270,119 @@ const academicController = {
     } catch (error) {
       return res.status(500).json({ success: false, message: 'Lỗi xóa học kỳ: ' + error.message });
     }
+  },
+
+  // --- NGÀNH ĐÀO TẠO (nganh_hoc) ---
+  async getMajors(req, res) {
+    try {
+      const { khoa_id } = req.query;
+      let query = `
+        SELECT 
+          n.*,
+          k.ten_khoa, k.ma_khoa,
+          (SELECT COUNT(*) FROM chuong_trinh_dao_tao ctdt WHERE ctdt.nganh_hoc_id = n.id AND ctdt.is_deleted = FALSE) AS total_curriculums,
+          (SELECT COUNT(*) FROM lop l WHERE l.ma_nganh = n.ma_nganh AND l.is_deleted = FALSE) AS total_classes
+        FROM nganh_hoc n
+        JOIN khoa k ON n.khoa_id = k.id
+        WHERE n.is_deleted = FALSE
+      `;
+      const params = [];
+      if (khoa_id && khoa_id !== 'all') {
+        query += ' AND n.khoa_id = ?';
+        params.push(khoa_id);
+      }
+      query += ' ORDER BY k.id ASC, n.ma_nganh ASC';
+      const [rows] = await pool.execute(query, params);
+      return res.status(200).json({ success: true, data: rows });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Lỗi tải danh sách ngành học: ' + error.message });
+    }
+  },
+
+  async createMajor(req, res) {
+    try {
+      const { khoa_id, ma_nganh, ten_nganh, thoi_gian_dao_tao_nam, tong_tin_chi_yeu_cau } = req.body;
+      if (!khoa_id || !ma_nganh || !ten_nganh) {
+        return res.status(400).json({ success: false, message: 'Vui lòng chọn Khoa, nhập Mã ngành và Tên ngành đào tạo.' });
+      }
+
+      const [dup] = await pool.execute('SELECT id FROM nganh_hoc WHERE ma_nganh = ? AND is_deleted = FALSE', [ma_nganh.trim()]);
+      if (dup.length > 0) {
+        return res.status(400).json({ success: false, message: 'Mã ngành đào tạo này đã tồn tại trong hệ thống.' });
+      }
+
+      const [result] = await pool.execute(
+        `INSERT INTO nganh_hoc (khoa_id, ma_nganh, ten_nganh, thoi_gian_dao_tao_nam, tong_tin_chi_yeu_cau, is_active, is_deleted)
+         VALUES (?, ?, ?, ?, ?, 1, 0)`,
+        [
+          khoa_id,
+          ma_nganh.trim(),
+          ten_nganh.trim(),
+          parseFloat(thoi_gian_dao_tao_nam) || 4,
+          parseInt(tong_tin_chi_yeu_cau, 10) || 135
+        ]
+      );
+
+      return res.status(201).json({
+        success: true,
+        message: 'Thêm ngành đào tạo mới thành công!',
+        data: { id: result.insertId }
+      });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Lỗi thêm ngành học: ' + error.message });
+    }
+  },
+
+  async updateMajor(req, res) {
+    try {
+      const { id } = req.params;
+      const { khoa_id, ma_nganh, ten_nganh, thoi_gian_dao_tao_nam, tong_tin_chi_yeu_cau, is_active } = req.body;
+      if (!khoa_id || !ma_nganh || !ten_nganh) {
+        return res.status(400).json({ success: false, message: 'Vui lòng điền đủ thông tin ngành đào tạo.' });
+      }
+
+      const [dup] = await pool.execute('SELECT id FROM nganh_hoc WHERE ma_nganh = ? AND id != ? AND is_deleted = FALSE', [ma_nganh.trim(), id]);
+      if (dup.length > 0) {
+        return res.status(400).json({ success: false, message: 'Mã ngành đào tạo này đã trùng với ngành khác.' });
+      }
+
+      await pool.execute(
+        `UPDATE nganh_hoc 
+         SET khoa_id = ?, ma_nganh = ?, ten_nganh = ?, thoi_gian_dao_tao_nam = ?, tong_tin_chi_yeu_cau = ?, is_active = ?
+         WHERE id = ?`,
+        [
+          khoa_id,
+          ma_nganh.trim(),
+          ten_nganh.trim(),
+          parseFloat(thoi_gian_dao_tao_nam) || 4,
+          parseInt(tong_tin_chi_yeu_cau, 10) || 135,
+          is_active !== undefined ? (is_active ? 1 : 0) : 1,
+          id
+        ]
+      );
+
+      return res.status(200).json({ success: true, message: 'Cập nhật ngành đào tạo thành công!' });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Lỗi cập nhật ngành học: ' + error.message });
+    }
+  },
+
+  async deleteMajor(req, res) {
+    try {
+      const { id } = req.params;
+      const [ctdtCheck] = await pool.execute('SELECT id FROM chuong_trinh_dao_tao WHERE nganh_hoc_id = ? AND is_deleted = FALSE', [id]);
+      if (ctdtCheck.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Không thể xóa ngành học này vì đã có Khung CTĐT đang áp dụng.'
+        });
+      }
+
+      await pool.execute('UPDATE nganh_hoc SET is_deleted = TRUE, is_active = 0 WHERE id = ?', [id]);
+      return res.status(200).json({ success: true, message: 'Xóa ngành đào tạo thành công!' });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Lỗi xóa ngành học: ' + error.message });
+    }
   }
 };
 

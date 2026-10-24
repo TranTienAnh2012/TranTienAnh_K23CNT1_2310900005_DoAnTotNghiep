@@ -104,7 +104,14 @@ class FaceDetector:
                 y2 = min(h, y + fh + pad_y)
 
                 cropped = img_bgr[y1:y2, x1:x2]
-                bbox = {"x": x, "y": y, "width": fw, "height": fh, "confidence": float(best_face[-1])}
+                bbox = {
+                    "x": x, 
+                    "y": y, 
+                    "width": fw, 
+                    "height": fh, 
+                    "confidence": float(best_face[-1]),
+                    "raw_face": best_face.tolist()
+                }
 
                 # Độ sáng & Độ nét chuẩn hóa 160x160
                 norm_crop = cv2.resize(cropped, (160, 160))

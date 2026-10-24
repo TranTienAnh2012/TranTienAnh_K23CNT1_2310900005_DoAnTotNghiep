@@ -52,14 +52,17 @@ const userController = {
           sv.ma_sv,
           (sv.face_embedding IS NOT NULL) AS has_face_registered,
           -- Họ tên & Email tổng hợp
-          COALESCE(gv.ho_ten, sv.ho_ten, CASE WHEN u.role = 'admin' THEN 'Quản trị viên Hệ thống' ELSE u.username END) AS ho_ten,
-          COALESCE(gv.email, sv.email, '') AS email,
+          COALESCE(gv.ho_ten, sv.ho_ten, qlk.ho_ten, CASE WHEN u.role = 'admin' THEN 'Quản trị viên Hệ thống' ELSE u.username END) AS ho_ten,
+          COALESCE(gv.email, sv.email, qlk.email, '') AS email,
           -- Mã định danh
-          COALESCE(gv.ma_gv, sv.ma_sv, u.username) AS ma_dinh_danh,
+          COALESCE(gv.ma_gv, sv.ma_sv, qlk.ma_can_bo, u.username) AS ma_dinh_danh,
           -- Thông tin Khoa
-          COALESCE(k_gv.ten_khoa, k_sv.ten_khoa, 'Hệ thống chung') AS ten_khoa,
-          COALESCE(k_gv.id, k_sv.id, NULL) AS khoa_id,
-          COALESCE(k_gv.ma_khoa, k_sv.ma_khoa, NULL) AS ma_khoa,
+          COALESCE(k_gv.ten_khoa, k_sv.ten_khoa, k_qlk.ten_khoa, 'Hệ thống chung') AS ten_khoa,
+          COALESCE(k_gv.id, k_sv.id, k_qlk.id, NULL) AS khoa_id,
+          COALESCE(k_gv.ma_khoa, k_sv.ma_khoa, k_qlk.ma_khoa, NULL) AS ma_khoa,
+          -- Thông tin Cán bộ Khoa
+          qlk.chuc_vu AS chuc_vu_khoa,
+          qlk.so_dien_thoai AS sdt_can_bo,
           -- Thông tin Lớp (đối với sinh viên)
           l.ten_lop,
           l.ma_lop,
@@ -70,6 +73,8 @@ const userController = {
         LEFT JOIN sinh_vien sv ON u.id = sv.user_id AND sv.is_deleted = FALSE
         LEFT JOIN lop l ON sv.lop_id = l.id
         LEFT JOIN khoa k_sv ON l.khoa_id = k_sv.id
+        LEFT JOIN quan_ly_khoa qlk ON u.id = qlk.user_id AND qlk.is_deleted = FALSE
+        LEFT JOIN khoa k_qlk ON qlk.khoa_id = k_qlk.id
         WHERE u.is_deleted = FALSE
         ORDER BY u.id DESC
       `;
@@ -110,7 +115,7 @@ const userController = {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-      const { role, username, password, ho_ten, email, ma_dinh_danh, khoa_id, lop_id, ngay_sinh, gioi_tinh } = req.body;
+      const { role, username, password, ho_ten, email, ma_dinh_danh, khoa_id, lop_id, ngay_sinh, gioi_tinh, chuc_vu, so_dien_thoai } = req.body;
 
       if (!role || !username || !ho_ten) {
         return res.status(400).json({ success: false, message: 'Vui lòng cung cấp đầy đủ thông tin: Vai trò, Username, Họ tên.' });
@@ -156,6 +161,41 @@ const userController = {
           await connection.execute(
             'INSERT INTO giang_vien (user_id, ma_gv, ho_ten, email, khoa_id) VALUES (?, ?, ?, ?, ?)',
             [userId, maGv, ho_ten, email || `${username}@smartedu.edu.vn`, khoa_id]
+          );
+        }
+      } else if (role === 'faculty_manager') {
+        const maCb = ma_dinh_danh || username;
+        if (!khoa_id) {
+          throw new Error('Vui lòng chọn Khoa phụ trách cho cán bộ Quản lý Khoa.');
+        }
+
+        // Kiểm tra xem cán bộ này đã có trong bảng quan_ly_khoa chưa
+        const [existCb] = await connection.execute(
+          'SELECT id, user_id FROM quan_ly_khoa WHERE ma_can_bo = ? AND is_deleted = FALSE',
+          [maCb]
+        );
+
+        if (existCb.length > 0) {
+          if (existCb[0].user_id) {
+            throw new Error(`Cán bộ Quản lý Khoa có mã "${maCb}" đã được cấp tài khoản trước đó.`);
+          }
+          await connection.execute(
+            'UPDATE quan_ly_khoa SET user_id = ?, khoa_id = ?, chuc_vu = COALESCE(?, chuc_vu) WHERE id = ?',
+            [userId, khoa_id, chuc_vu || null, existCb[0].id]
+          );
+        } else {
+          await connection.execute(
+            `INSERT INTO quan_ly_khoa (user_id, ma_can_bo, ho_ten, email, so_dien_thoai, khoa_id, chuc_vu)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+              userId,
+              maCb,
+              ho_ten,
+              email || `${username}@smartedu.edu.vn`,
+              so_dien_thoai || null,
+              khoa_id,
+              chuc_vu || 'Trợ lý Khoa'
+            ]
           );
         }
       } else if (role === 'student') {
@@ -413,7 +453,9 @@ const userController = {
     try {
       const query = `
         SELECT 
-          gv.id, gv.user_id, gv.ma_gv, gv.ho_ten, gv.email, gv.khoa_id, gv.avatar_url, gv.is_active,
+          gv.id, gv.user_id, gv.ma_gv, gv.ho_ten, gv.email, gv.khoa_id, gv.avatar_url, 
+          gv.face_embedding, gv.face_updated_at, gv.is_active,
+          (gv.face_embedding IS NOT NULL) AS has_face_registered,
           k.ten_khoa, k.ma_khoa, u.username
         FROM giang_vien gv
         LEFT JOIN users u ON gv.user_id = u.id AND u.is_deleted = FALSE
@@ -476,7 +518,7 @@ const userController = {
       const query = `
         SELECT 
           sv.id, sv.user_id, sv.ma_sv, sv.ho_ten, sv.ngay_sinh, sv.gioi_tinh, sv.email, 
-          sv.lop_id, sv.avatar_url, sv.face_updated_at, sv.is_active,
+          sv.lop_id, sv.avatar_url, sv.face_embedding, sv.face_updated_at, sv.is_active,
           (sv.face_embedding IS NOT NULL) AS has_face_registered,
           l.ten_lop, l.ma_lop, l.khoa_id, k.ten_khoa, k.ma_khoa, u.username
         FROM sinh_vien sv
@@ -580,9 +622,10 @@ const userController = {
 
       // Soft delete user
       await connection.execute('UPDATE users SET is_deleted = TRUE, is_active = FALSE WHERE id = ?', [id]);
-      // Soft delete related giang_vien or sinh_vien
+      // Soft delete related giang_vien, sinh_vien or quan_ly_khoa
       await connection.execute('UPDATE giang_vien SET is_deleted = TRUE, is_active = FALSE WHERE user_id = ?', [id]);
       await connection.execute('UPDATE sinh_vien SET is_deleted = TRUE, is_active = FALSE WHERE user_id = ?', [id]);
+      await connection.execute('UPDATE quan_ly_khoa SET is_deleted = TRUE, is_active = FALSE WHERE user_id = ?', [id]);
 
       await connection.commit();
       return res.status(200).json({ success: true, message: 'Xóa tài khoản thành công!' });
@@ -731,6 +774,7 @@ const userController = {
         success: true,
         message: `Đăng ký dữ liệu khuôn mặt cho sinh viên ${students[0].ho_ten} (${students[0].ma_sv}) thành công!`,
         data: {
+          face_embedding: aiResult.embedding,
           quality: aiResult.quality,
           face_updated_at: new Date()
         }
@@ -791,6 +835,7 @@ const userController = {
         success: true,
         message: `Đăng ký dữ liệu khuôn mặt cho giảng viên ${teachers[0].ho_ten} (${teachers[0].ma_gv}) thành công!`,
         data: {
+          face_embedding: aiResult.embedding,
           quality: aiResult.quality,
           face_updated_at: new Date()
         }

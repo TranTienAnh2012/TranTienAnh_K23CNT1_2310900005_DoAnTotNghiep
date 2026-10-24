@@ -99,6 +99,7 @@ export default function AccountEditModal({ isOpen, onClose, account, onSuccess }
             >
               <option value="student">Sinh viên (Student)</option>
               <option value="teacher">Giảng viên (Teacher)</option>
+              <option value="faculty_manager">Quản lý Khoa (Faculty Manager)</option>
               <option value="admin">Quản trị viên (Admin)</option>
             </select>
           </div>

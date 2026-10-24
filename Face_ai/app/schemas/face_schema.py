@@ -13,6 +13,7 @@ class VerifyFaceResponse(BaseModel):
     is_match: bool = Field(..., description="True nếu độ tương đồng >= ngưỡng")
     similarity_score: float = Field(..., description="Điểm Cosine Similarity (0.0 - 1.0)")
     threshold: float
+    checkin_embedding: Optional[List[float]] = Field(default=None, description="Vector đặc trưng vừa trích xuất từ ảnh camera")
     message: str
 
 class HealthResponse(BaseModel):

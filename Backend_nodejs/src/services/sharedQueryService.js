@@ -81,6 +81,24 @@ const sharedQueryService = {
     `;
     const [rows] = await pool.execute(query, [identifier]);
     return rows[0] || null;
+  },
+
+  /**
+   * Lấy thông tin cán bộ quản lý khoa theo user_id hoặc quan_ly_khoa.id
+   */
+  async getFacultyProfile(identifier, isUserId = false) {
+    const column = isUserId ? 'qlk.user_id' : 'qlk.id';
+    const query = `
+      SELECT 
+        qlk.id, qlk.user_id, qlk.ma_can_bo, qlk.ho_ten, qlk.email, qlk.so_dien_thoai,
+        qlk.khoa_id, qlk.chuc_vu, qlk.avatar_url, qlk.is_active,
+        k.ma_khoa, k.ten_khoa
+      FROM quan_ly_khoa qlk
+      JOIN khoa k ON qlk.khoa_id = k.id AND k.is_deleted = FALSE
+      WHERE ${column} = ? AND qlk.is_deleted = FALSE
+    `;
+    const [rows] = await pool.execute(query, [identifier]);
+    return rows[0] || null;
   }
 };
 

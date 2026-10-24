@@ -3,6 +3,7 @@ import {
   X,
   KeyRound,
   Shield,
+  ShieldCheck,
   Calendar,
   CheckCircle2,
   Lock,
@@ -22,6 +23,11 @@ export default function AccountDetailModal({ isOpen, onClose, account, onEdit })
       label: 'Quản trị viên (Admin)',
       badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
       icon: Shield
+    },
+    faculty_manager: {
+      label: 'Cán bộ Quản lý Khoa',
+      badgeClass: 'bg-purple-100 text-purple-800 border-purple-200',
+      icon: ShieldCheck
     },
     teacher: {
       label: 'Giảng viên',
@@ -100,9 +106,11 @@ export default function AccountDetailModal({ isOpen, onClose, account, onEdit })
             </div>
 
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-slate-500 block mb-1">Lớp sinh hoạt:</span>
+              <span className="text-slate-500 block mb-1">
+                {account.chuc_vu_khoa ? 'Chức vụ tại Khoa:' : 'Lớp sinh hoạt:'}
+              </span>
               <span className="font-bold text-slate-800 text-sm">
-                {account.ten_lop ? `${account.ten_lop}` : 'Không áp dụng'}
+                {account.chuc_vu_khoa || (account.ten_lop ? `${account.ten_lop}` : 'Không áp dụng')}
               </span>
             </div>
 

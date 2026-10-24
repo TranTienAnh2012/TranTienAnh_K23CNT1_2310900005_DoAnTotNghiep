@@ -12,8 +12,8 @@ const teacherExamController = {
           ct.*,
           mh.ten_mon, mh.ma_mon,
           hk.ten_hoc_ky,
-          (SELECT COUNT(*) FROM sinh_vien_ca_thi svct WHERE svct.ca_thi_id = ct.id) AS total_candidates,
-          (SELECT COUNT(*) FROM sinh_vien_ca_thi svct WHERE svct.ca_thi_id = ct.id AND svct.trang_thai = 'checkin') AS checked_in_count
+          (SELECT COUNT(*) FROM dang_ky_hoc_phan dk WHERE dk.ca_thi_id = ct.id) AS total_candidates,
+          (SELECT COUNT(*) FROM dang_ky_hoc_phan dk WHERE dk.ca_thi_id = ct.id AND dk.trang_thai_thi = 'checkin') AS checked_in_count
         FROM ca_thi ct
         JOIN mon_hoc mh ON ct.mon_hoc_id = mh.id AND mh.is_deleted = FALSE
         JOIN hoc_ky hk ON ct.hoc_ky_id = hk.id AND hk.is_deleted = FALSE
@@ -45,15 +45,17 @@ const teacherExamController = {
 
       const candidatesQuery = `
         SELECT 
-          svct.*,
+          dk.id, dk.ca_thi_id, dk.sinh_vien_id, dk.so_bao_danh, dk.vi_tri_ngoi,
+          dk.thoi_gian_checkin_thi AS thoi_gian_checkin, dk.similarity_score_thi AS similarity_score,
+          dk.captured_image_url_thi AS captured_image_url, dk.trang_thai_thi AS trang_thai,
           sv.ma_sv, sv.ho_ten, sv.avatar_url,
           (sv.face_embedding IS NOT NULL) AS has_face_registered,
           l.ten_lop
-        FROM sinh_vien_ca_thi svct
-        JOIN sinh_vien sv ON svct.sinh_vien_id = sv.id AND sv.is_deleted = FALSE
+        FROM dang_ky_hoc_phan dk
+        JOIN sinh_vien sv ON dk.sinh_vien_id = sv.id AND sv.is_deleted = FALSE
         LEFT JOIN lop l ON sv.lop_id = l.id
-        WHERE svct.ca_thi_id = ?
-        ORDER BY svct.so_bao_danh ASC
+        WHERE dk.ca_thi_id = ?
+        ORDER BY dk.so_bao_danh ASC
       `;
       const [candidates] = await pool.execute(candidatesQuery, [examId]);
 
@@ -76,7 +78,7 @@ const teacherExamController = {
       const { sinh_vien_id, trang_thai } = req.body;
 
       await pool.execute(
-        'UPDATE sinh_vien_ca_thi SET trang_thai = ? WHERE ca_thi_id = ? AND sinh_vien_id = ?',
+        'UPDATE dang_ky_hoc_phan SET trang_thai_thi = ? WHERE ca_thi_id = ? AND sinh_vien_id = ?',
         [trang_thai, examId, sinh_vien_id]
       );
 

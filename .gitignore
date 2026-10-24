@@ -37,3 +37,16 @@ yarn-error.log*
 Thumbs.db
 .idea/
 .vscode/
+
+# Archives & Temporary files
+*.rar
+*.zip
+*.7z
+*.tar.gz
+
+# Uploads (Keep gitkeep)
+Backend_nodejs/src/uploads/avatars/*
+!Backend_nodejs/src/uploads/avatars/.gitkeep
+Backend_nodejs/src/uploads/checkins/*
+!Backend_nodejs/src/uploads/checkins/.gitkeep
+

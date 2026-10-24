@@ -7,6 +7,7 @@ import {
   GraduationCap,
   Users,
   Shield,
+  ShieldCheck,
   KeyRound,
   Eye,
   EyeOff,
@@ -25,7 +26,7 @@ import {
 import { adminService } from '../../../services/adminService';
 
 export default function AccountProvisionModal({ isOpen, onClose, onSuccess, initialMode = 'single' }) {
-  const [role, setRole] = useState('student'); // 'student' | 'teacher' | 'admin'
+  const [role, setRole] = useState('student'); // 'student' | 'teacher' | 'faculty_manager' | 'admin'
   const [provisionMode, setProvisionMode] = useState('single'); // 'single' | 'bulk'
 
   const [faculties, setFaculties] = useState([]);
@@ -37,6 +38,8 @@ export default function AccountProvisionModal({ isOpen, onClose, onSuccess, init
   const [selectedClassId, setSelectedClassId] = useState('');
   const [hoTen, setHoTen] = useState('');
   const [maDinhDanh, setMaDinhDanh] = useState('');
+  const [chucVu, setChucVu] = useState('Trợ lý Khoa');
+  const [soDienThoai, setSoDienThoai] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
@@ -111,6 +114,8 @@ export default function AccountProvisionModal({ isOpen, onClose, onSuccess, init
     setRole('student');
     setHoTen('');
     setMaDinhDanh('');
+    setChucVu('Trợ lý Khoa');
+    setSoDienThoai('');
     setUsername('');
     setPassword('123456');
     setEmail('');
@@ -118,7 +123,7 @@ export default function AccountProvisionModal({ isOpen, onClose, onSuccess, init
     setGioiTinh('Nam');
   };
 
-  // Tự động gợi ý username & email khi nhập Mã SV/GV
+  // Tự động gợi ý username & email khi nhập Mã SV/GV/CBK
   const handleMaChange = (val) => {
     const code = val.trim().toLowerCase();
     setMaDinhDanh(val);
@@ -145,8 +150,8 @@ export default function AccountProvisionModal({ isOpen, onClose, onSuccess, init
       return;
     }
 
-    if (role === 'teacher' && !selectedFacultyId) {
-      setError('Vui lòng chọn Khoa công tác cho Giảng viên.');
+    if ((role === 'teacher' || role === 'faculty_manager') && !selectedFacultyId) {
+      setError(`Vui lòng chọn Khoa phụ trách cho ${role === 'teacher' ? 'Giảng viên' : 'Cán bộ Quản lý Khoa'}.`);
       return;
     }
 
@@ -167,7 +172,9 @@ export default function AccountProvisionModal({ isOpen, onClose, onSuccess, init
         khoa_id: selectedFacultyId ? Number(selectedFacultyId) : null,
         lop_id: selectedClassId ? Number(selectedClassId) : null,
         ngay_sinh: ngaySinh,
-        gioi_tinh: gioiTinh
+        gioi_tinh: gioiTinh,
+        chuc_vu: role === 'faculty_manager' ? chucVu : null,
+        so_dien_thoai: role === 'faculty_manager' ? soDienThoai : null
       };
 
       const res = await adminService.provisionUser(payload);
@@ -421,7 +428,7 @@ export default function AccountProvisionModal({ isOpen, onClose, onSuccess, init
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
       <div
         className={`bg-white w-full ${
-          provisionMode === 'bulk' && role === 'student' ? 'max-w-4xl' : 'max-w-2xl'
+          provisionMode === 'bulk' && role === 'student' ? 'max-w-4xl' : 'max-w-3xl'
         } rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] transition-all`}
       >
         {/* Header */}
@@ -433,7 +440,7 @@ export default function AccountProvisionModal({ isOpen, onClose, onSuccess, init
             <div>
               <h3 className="font-bold text-lg leading-tight">Cấp Tài khoản Nội bộ Mới</h3>
               <p className="text-xs text-blue-100">
-                Tạo và phân quyền tài khoản cho Sinh viên, Giảng viên theo đúng Khoa & Lớp
+                Tạo và phân quyền tài khoản cho Sinh viên, Giảng viên, Quản lý Khoa theo đúng Khoa & Lớp
               </p>
             </div>
           </div>
@@ -612,7 +619,7 @@ export default function AccountProvisionModal({ isOpen, onClose, onSuccess, init
                 <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
                   1. Chọn Loại Tài Khoản Cần Cấp <span className="text-rose-500">*</span>
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -644,6 +651,23 @@ export default function AccountProvisionModal({ isOpen, onClose, onSuccess, init
                     <Users size={24} className={role === 'teacher' ? 'text-blue-600' : 'text-slate-400'} />
                     <span className="text-sm font-bold mt-1.5">Giảng viên</span>
                     <span className="text-[11px] text-slate-400">Giảng dạy theo Khoa</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRole('faculty_manager');
+                      setProvisionMode('single');
+                    }}
+                    className={`flex flex-col items-center justify-center p-3.5 rounded-xl border-2 transition-all cursor-pointer ${
+                      role === 'faculty_manager'
+                        ? 'border-indigo-500 bg-indigo-50/60 text-indigo-800 shadow-xs'
+                        : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
+                    }`}
+                  >
+                    <ShieldCheck size={24} className={role === 'faculty_manager' ? 'text-indigo-600' : 'text-slate-400'} />
+                    <span className="text-sm font-bold mt-1.5">Quản lý Khoa</span>
+                    <span className="text-[11px] text-slate-400">Phân quyền theo Khoa</span>
                   </button>
 
                   <button
@@ -946,12 +970,22 @@ export default function AccountProvisionModal({ isOpen, onClose, onSuccess, init
                       {role !== 'admin' ? (
                         <div>
                           <label className="block text-xs font-medium text-slate-600 mb-1">
-                            {role === 'student' ? 'Mã Sinh viên (MSSV)' : 'Mã Giảng viên (MSGV)'}{' '}
+                            {role === 'student'
+                              ? 'Mã Sinh viên (MSSV)'
+                              : role === 'teacher'
+                              ? 'Mã Giảng viên (MSGV)'
+                              : 'Mã Cán bộ Khoa (Mã CBK)'}{' '}
                             <span className="text-rose-500">*</span>
                           </label>
                           <input
                             type="text"
-                            placeholder={role === 'student' ? 'Ví dụ: 2310900005' : 'Ví dụ: GV01'}
+                            placeholder={
+                              role === 'student'
+                                ? 'Ví dụ: 2310900005'
+                                : role === 'teacher'
+                                ? 'Ví dụ: GV01'
+                                : 'Ví dụ: CBK01 hoặc CNTT_QL01'
+                            }
                             value={maDinhDanh}
                             onChange={(e) => handleMaChange(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium text-slate-800"
@@ -971,6 +1005,39 @@ export default function AccountProvisionModal({ isOpen, onClose, onSuccess, init
                         </div>
                       )}
                     </div>
+
+                    {/* Dành riêng cho Cán bộ Quản lý Khoa */}
+                    {role === 'faculty_manager' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-medium text-slate-600 mb-1">
+                            Chức vụ trong Khoa
+                          </label>
+                          <select
+                            value={chucVu}
+                            onChange={(e) => setChucVu(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800"
+                          >
+                            <option value="Trợ lý Khoa">Trợ lý Khoa</option>
+                            <option value="Giáo vụ Khoa">Giáo vụ Khoa</option>
+                            <option value="Phó Trưởng khoa">Phó Trưởng khoa</option>
+                            <option value="Trưởng khoa">Trưởng khoa</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-slate-600 mb-1">
+                            Số điện thoại liên hệ
+                          </label>
+                          <input
+                            type="tel"
+                            placeholder="Ví dụ: 0912345678"
+                            value={soDienThoai}
+                            onChange={(e) => setSoDienThoai(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-slate-800"
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {role === 'student' && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">

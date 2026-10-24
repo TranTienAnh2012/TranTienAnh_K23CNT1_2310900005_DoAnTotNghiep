@@ -4,6 +4,7 @@ const userController = require('../../controllers/admin/userController');
 const academicController = require('../../controllers/admin/academicController');
 const courseController = require('../../controllers/admin/courseController');
 const examController = require('../../controllers/admin/examController');
+const facultyOperationsController = require('../../controllers/admin/facultyOperationsController');
 const upload = require('../../middlewares/uploadMiddleware');
 
 // 1. Thống kê Dashboard
@@ -39,6 +40,12 @@ router.get('/faculties', academicController.getFaculties);
 router.post('/faculties', academicController.createFaculty);
 router.put('/faculties/:id', academicController.updateFaculty);
 router.delete('/faculties/:id', academicController.deleteFaculty);
+
+// 5.1 Quản lý Ngành đào tạo (nganh_hoc)
+router.get('/majors', academicController.getMajors);
+router.post('/majors', academicController.createMajor);
+router.put('/majors/:id', academicController.updateMajor);
+router.delete('/majors/:id', academicController.deleteMajor);
 
 // 6. Quản lý Lớp
 router.get('/classes', academicController.getClasses);
@@ -83,5 +90,21 @@ router.delete('/exams/:id', examController.deleteExam);
 router.get('/exams/:examId/candidates', examController.getExamCandidates);
 router.post('/exams/:examId/candidates', examController.assignCandidate);
 router.patch('/exams/:id/toggle-active', examController.toggleExamActive);
+
+// 11. Quản lý Cán bộ Quản lý Khoa (quan_ly_khoa)
+router.get('/faculty-managers', facultyOperationsController.getFacultyManagers);
+router.post('/faculty-managers', facultyOperationsController.createFacultyManager);
+router.put('/faculty-managers/:id', facultyOperationsController.updateFacultyManager);
+router.delete('/faculty-managers/:id', facultyOperationsController.deleteFacultyManager);
+
+// 12. Quản lý Học phí & Xác nhận Công nợ (Kế toán / Admin duyệt tiền)
+router.get('/tuition', facultyOperationsController.getAllTuition);
+router.get('/tuition/faculty-rates', facultyOperationsController.getFacultyTuitionRates);
+router.put('/tuition/faculty-rates/:id', facultyOperationsController.updateFacultyTuitionRates);
+router.post('/tuition/apply-rate', facultyOperationsController.applyFacultyTuitionRate);
+router.post('/tuition', facultyOperationsController.createTuition);
+router.put('/tuition/:id', facultyOperationsController.updateTuition);
+router.put('/tuition/:id/confirm', facultyOperationsController.confirmTuition);
+router.delete('/tuition/:id', facultyOperationsController.deleteTuition);
 
 module.exports = router;

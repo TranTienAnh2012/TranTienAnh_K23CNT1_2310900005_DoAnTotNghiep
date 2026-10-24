@@ -13,8 +13,8 @@ export const teacherService = {
     });
   },
   getMyCourses: () => api.get('/teacher/courses'),
-
   getMySchedule: () => api.get('/teacher/schedule'),
+  getFacultyStudents: (params) => api.get('/teacher/students', { params }),
   getSessionAttendance: (sessionId) => api.get(`/teacher/sessions/${sessionId}/attendance`),
   manualOverride: (sessionId, data) => api.post(`/teacher/sessions/${sessionId}/attendance/override`, data),
   getExams: () => api.get('/teacher/exams'),

@@ -67,6 +67,14 @@ async function authMiddleware(req, res, next) {
       if (svRows.length > 0) {
         req.user.studentProfile = svRows[0];
       }
+    } else if (user.role === 'faculty_manager') {
+      const [qlkRows] = await pool.execute(
+        'SELECT qlk.id, qlk.ma_can_bo, qlk.ho_ten, qlk.email, qlk.khoa_id, qlk.chuc_vu, k.ma_khoa, k.ten_khoa FROM quan_ly_khoa qlk JOIN khoa k ON qlk.khoa_id = k.id WHERE qlk.user_id = ? AND qlk.is_deleted = FALSE',
+        [user.id]
+      );
+      if (qlkRows.length > 0) {
+        req.user.facultyProfile = qlkRows[0];
+      }
     }
 
     next();

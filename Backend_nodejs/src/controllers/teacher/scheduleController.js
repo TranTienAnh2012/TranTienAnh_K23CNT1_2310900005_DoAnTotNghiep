@@ -115,10 +115,11 @@ const scheduleController = {
     }
   },
 
-  // Lấy lịch dạy theo tuần/ngày của giảng viên
+  // Lấy lịch dạy theo tuần/ngày của giảng viên (Bảo mật nghiêm ngặt theo Khoa)
   async getMySchedule(req, res) {
     try {
       const teacherId = req.user.teacherProfile?.id;
+      const khoaId = req.user.teacherProfile?.khoa_id;
       if (!teacherId) {
         return res.status(400).json({ success: false, message: 'Không tìm thấy hồ sơ giảng viên.' });
       }
@@ -126,20 +127,111 @@ const scheduleController = {
       const query = `
         SELECT 
           bh.id, bh.ngay_hoc, bh.ca_hoc, bh.phong_hoc, bh.ghi_chu, bh.is_active,
-          lhp.id AS lop_hoc_phan_id, lhp.ma_lhp, lhp.ten_lhp,
-          mh.ten_mon, mh.so_tin_chi,
+          lhp.id AS lop_hoc_phan_id, lhp.ma_lhp, lhp.ten_lhp, lhp.so_luong_toi_da,
+          mh.id AS mon_hoc_id, mh.ma_mon, mh.ten_mon, mh.so_tin_chi,
+          k.id AS khoa_id, k.ma_khoa, k.ten_khoa,
+          gv.ho_ten AS ten_giang_vien, gv.ma_gv,
+          (SELECT COUNT(*) FROM dang_ky_hoc_phan dkm WHERE dkm.lop_hoc_phan_id = lhp.id) AS total_enrolled,
           (SELECT COUNT(*) FROM lich_su_diem_danh dd WHERE dd.buoi_hoc_id = bh.id AND dd.trang_thai = 'Present') AS count_present,
           (SELECT COUNT(*) FROM lich_su_diem_danh dd WHERE dd.buoi_hoc_id = bh.id AND dd.trang_thai = 'Late') AS count_late,
           (SELECT COUNT(*) FROM lich_su_diem_danh dd WHERE dd.buoi_hoc_id = bh.id AND dd.trang_thai = 'Absent') AS count_absent
         FROM buoi_hoc bh
         JOIN lop_hoc_phan lhp ON bh.lop_hoc_phan_id = lhp.id AND lhp.is_deleted = FALSE
         JOIN mon_hoc mh ON lhp.mon_hoc_id = mh.id AND mh.is_deleted = FALSE
-        WHERE lhp.giang_vien_id = ? AND bh.is_deleted = FALSE
+        JOIN giang_vien gv ON lhp.giang_vien_id = gv.id AND gv.is_deleted = FALSE
+        JOIN khoa k ON gv.khoa_id = k.id AND k.is_deleted = FALSE
+        WHERE lhp.giang_vien_id = ? 
+          AND (? IS NULL OR gv.khoa_id = ?)
+          AND bh.is_deleted = FALSE
         ORDER BY bh.ngay_hoc DESC, bh.ca_hoc ASC
       `;
-      const [rows] = await pool.execute(query, [teacherId]);
-      return res.status(200).json({ success: true, data: rows });
+      const [rows] = await pool.execute(query, [teacherId, khoaId, khoaId]);
+
+      // Lấy thông tin khoa hiện tại của giảng viên
+      let facultyInfo = null;
+      if (khoaId) {
+        const [fRows] = await pool.execute(
+          'SELECT id, ma_khoa, ten_khoa, van_phong, truong_khoa FROM khoa WHERE id = ?',
+          [khoaId]
+        );
+        facultyInfo = fRows[0] || null;
+      }
+
+      return res.status(200).json({ 
+        success: true, 
+        data: rows,
+        faculty: facultyInfo
+      });
     } catch (error) {
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // Lấy danh sách sinh viên thuộc Khoa của giảng viên (Chỉ xem và quản lý sinh viên thuộc Khoa của mình)
+  async getFacultyStudents(req, res) {
+    try {
+      const teacherId = req.user.teacherProfile?.id;
+      const khoaId = req.user.teacherProfile?.khoa_id;
+
+      if (!teacherId || !khoaId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Giảng viên chưa được phân bổ Khoa quản lý hợp lệ.' 
+        });
+      }
+
+      const { lop_id, search } = req.query;
+
+      let query = `
+        SELECT 
+          sv.id, sv.ma_sv, sv.ho_ten, sv.email, sv.ngay_sinh, sv.gioi_tinh, sv.avatar_url,
+          (sv.face_embedding IS NOT NULL) AS has_face_registered,
+          sv.is_active,
+          l.id AS lop_id, l.ma_lop, l.ten_lop, l.khoa_hoc,
+          k.id AS khoa_id, k.ma_khoa, k.ten_khoa,
+          (SELECT COUNT(*) FROM dang_ky_hoc_phan dkm WHERE dkm.sinh_vien_id = sv.id) AS total_courses
+        FROM sinh_vien sv
+        JOIN lop l ON sv.lop_id = l.id AND l.is_deleted = FALSE
+        JOIN khoa k ON l.khoa_id = k.id AND k.is_deleted = FALSE
+        WHERE k.id = ? AND sv.is_deleted = FALSE
+      `;
+      const params = [khoaId];
+
+      if (lop_id) {
+        query += ' AND l.id = ?';
+        params.push(lop_id);
+      }
+
+      if (search) {
+        query += ' AND (sv.ma_sv LIKE ? OR sv.ho_ten LIKE ? OR sv.email LIKE ?)';
+        const searchTerm = `%${search.trim()}%`;
+        params.push(searchTerm, searchTerm, searchTerm);
+      }
+
+      query += ' ORDER BY l.ten_lop ASC, sv.ho_ten ASC';
+
+      const [students] = await pool.execute(query, params);
+
+      // Lấy danh sách các lớp thuộc Khoa này để filter
+      const [classes] = await pool.execute(
+        'SELECT id, ma_lop, ten_lop, khoa_hoc FROM lop WHERE khoa_id = ? AND is_deleted = FALSE ORDER BY ten_lop ASC',
+        [khoaId]
+      );
+
+      // Lấy thông tin khoa
+      const [fRows] = await pool.execute(
+        'SELECT id, ma_khoa, ten_khoa, van_phong, truong_khoa FROM khoa WHERE id = ?',
+        [khoaId]
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: students,
+        classes: classes,
+        faculty: fRows[0] || null
+      });
+    } catch (error) {
+      console.error('[scheduleController.getFacultyStudents]', error);
       return res.status(500).json({ success: false, message: error.message });
     }
   }

@@ -27,16 +27,21 @@ class FaceEmbedder:
         """
         if self.recognizer and full_img_bgr is not None and bbox is not None:
             try:
-                # SFace yêu cầu định dạng aligned hoặc bbox
-                aligned_face = self.recognizer.alignCrop(full_img_bgr, np.array([
-                    bbox["x"], bbox["y"], bbox["width"], bbox["height"],
-                    bbox["x"] + bbox["width"]*0.3, bbox["y"] + bbox["height"]*0.3,
-                    bbox["x"] + bbox["width"]*0.7, bbox["y"] + bbox["height"]*0.3,
-                    bbox["x"] + bbox["width"]*0.5, bbox["y"] + bbox["height"]*0.6,
-                    bbox["x"] + bbox["width"]*0.35, bbox["y"] + bbox["height"]*0.8,
-                    bbox["x"] + bbox["width"]*0.65, bbox["y"] + bbox["height"]*0.8,
-                    bbox["confidence"]
-                ]))
+                # SFace yêu cầu định dạng 15 phần tử (bbox + 5 facial landmarks + score)
+                if isinstance(bbox, dict) and "raw_face" in bbox:
+                    face_box = np.array(bbox["raw_face"], dtype=np.float32)
+                else:
+                    face_box = np.array([
+                        bbox["x"], bbox["y"], bbox["width"], bbox["height"],
+                        bbox["x"] + bbox["width"]*0.3, bbox["y"] + bbox["height"]*0.3,
+                        bbox["x"] + bbox["width"]*0.7, bbox["y"] + bbox["height"]*0.3,
+                        bbox["x"] + bbox["width"]*0.5, bbox["y"] + bbox["height"]*0.6,
+                        bbox["x"] + bbox["width"]*0.35, bbox["y"] + bbox["height"]*0.8,
+                        bbox["x"] + bbox["width"]*0.65, bbox["y"] + bbox["height"]*0.8,
+                        bbox.get("confidence", 0.9)
+                    ], dtype=np.float32)
+
+                aligned_face = self.recognizer.alignCrop(full_img_bgr, face_box)
                 feature = self.recognizer.feature(aligned_face)
                 feature = feature.flatten()
                 # Chuẩn hóa L2

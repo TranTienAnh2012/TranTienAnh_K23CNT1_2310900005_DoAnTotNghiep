@@ -38,6 +38,12 @@ export const adminService = {
   updateFaculty: (id, data) => api.put(`/admin/faculties/${id}`, data),
   deleteFaculty: (id) => api.delete(`/admin/faculties/${id}`),
 
+  // Majors (Ngành đào tạo)
+  getMajors: (params) => api.get('/admin/majors', { params }),
+  createMajor: (data) => api.post('/admin/majors', data),
+  updateMajor: (id, data) => api.put(`/admin/majors/${id}`, data),
+  deleteMajor: (id) => api.delete(`/admin/majors/${id}`),
+
   getClasses: () => api.get('/admin/classes'),
   createClass: (data) => api.post('/admin/classes', data),
   updateClass: (id, data) => api.put(`/admin/classes/${id}`, data),
@@ -77,5 +83,22 @@ export const adminService = {
   deleteExam: (id) => api.delete(`/admin/exams/${id}`),
   getExamCandidates: (examId) => api.get(`/admin/exams/${examId}/candidates`),
   assignCandidate: (examId, data) => api.post(`/admin/exams/${examId}/candidates`, data),
-  toggleExamActive: (id) => api.patch(`/admin/exams/${id}/toggle-active`)
+  toggleExamActive: (id) => api.patch(`/admin/exams/${id}/toggle-active`),
+
+  // Quản lý Cán bộ Khoa (quan_ly_khoa)
+  getFacultyManagers: (params) => api.get('/admin/faculty-managers', { params }),
+  createFacultyManager: (data) => api.post('/admin/faculty-managers', data),
+  updateFacultyManager: (id, data) => api.put(`/admin/faculty-managers/${id}`, data),
+  deleteFacultyManager: (id) => api.delete(`/admin/faculty-managers/${id}`),
+
+  // Quản lý Học phí & Công nợ (Kế toán / Admin)
+  getAllTuition: (params) => api.get('/admin/tuition', { params }),
+  getFacultyTuitionRates: () => api.get('/admin/tuition/faculty-rates'),
+  updateFacultyTuitionRates: (id, data) => api.put(`/admin/tuition/faculty-rates/${id}`, data),
+  applyFacultyTuitionRate: (data) => api.post('/admin/tuition/apply-rate', data),
+  createTuition: (data) => api.post('/admin/tuition', data),
+  updateTuition: (id, data) => api.put(`/admin/tuition/${id}`, data),
+  confirmTuition: (id, data) => api.put(`/admin/tuition/${id}/confirm`, data),
+  deleteTuition: (id) => api.delete(`/admin/tuition/${id}`)
 };
+

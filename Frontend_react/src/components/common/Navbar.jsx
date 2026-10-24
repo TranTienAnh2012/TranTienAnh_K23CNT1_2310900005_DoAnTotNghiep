@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { LogOut, User, Bell, Shield, GraduationCap, BookOpen } from 'lucide-react';
+import { LogOut, User, Bell, Shield, GraduationCap, BookOpen, Building2 } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -11,6 +11,12 @@ export default function Navbar() {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-sm">
             <Shield size={13} /> Quản trị viên
+          </span>
+        );
+      case 'faculty_manager':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 shadow-sm">
+            <Building2 size={13} /> Quản lý Khoa
           </span>
         );
       case 'teacher':

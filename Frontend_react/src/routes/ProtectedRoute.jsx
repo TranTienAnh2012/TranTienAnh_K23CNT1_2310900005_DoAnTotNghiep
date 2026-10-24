@@ -20,6 +20,7 @@ export default function ProtectedRoute({ allowedRoles = [] }) {
   if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
     // Nếu role không khớp, chuyển hướng về trang chủ tương ứng của role
     if (user?.role === 'admin') return <Navigate to="/admin" replace />;
+    if (user?.role === 'faculty_manager') return <Navigate to="/faculty" replace />;
     if (user?.role === 'teacher') return <Navigate to="/teacher" replace />;
     if (user?.role === 'student') return <Navigate to="/student" replace />;
     return <Navigate to="/login" replace />;

@@ -157,9 +157,25 @@ export default function StudentDashboard() {
 
       {/* Danh sách các buổi học hôm nay */}
       <div className="card">
-        <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>
-          Lịch học & Điểm danh Hôm nay
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>
+            Lịch học & Điểm danh Hôm nay
+          </h3>
+          <Link
+            to="/student/schedule"
+            style={{
+              fontSize: '13px',
+              fontWeight: '700',
+              color: '#0284c7',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <Calendar size={15} /> Xem toàn bộ Thời khóa biểu →
+          </Link>
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {todaySessions.map((s) => (

@@ -141,16 +141,37 @@ const courseController = {
 
   async createSession(req, res) {
     try {
-      const { lop_hoc_phan_id, ngay_hoc, ca_hoc, phong_hoc, ghi_chu } = req.body;
+      const { lop_hoc_phan_id, ngay_hoc, ca_hoc, phong_hoc, ghi_chu, gio_bat_dau, gio_ket_thuc } = req.body;
       if (!lop_hoc_phan_id || !ngay_hoc || !ca_hoc || !phong_hoc) {
-        return res.status(400).json({ success: false, message: 'Vui lòng nhập đủ ngày học, ca học và phòng học.' });
+        return res.status(400).json({ success: false, message: 'Vui lòng nhập đủ lớp học phần, ngày học, ca học và phòng học.' });
       }
 
-      const formattedDate = new Date(ngay_hoc).toISOString().split('T')[0];
+      // Chuẩn hóa ngày an toàn tránh lệch múi giờ
+      let formattedDate = ngay_hoc;
+      if (typeof ngay_hoc === 'string' && /^\d{4}-\d{2}-\d{2}/.test(ngay_hoc)) {
+        formattedDate = ngay_hoc.substring(0, 10);
+      } else {
+        const d = new Date(ngay_hoc);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        formattedDate = `${y}-${m}-${day}`;
+      }
+
+      // Trích xuất giờ bắt đầu và kết thúc từ ca_hoc nếu chưa có
+      let startTime = gio_bat_dau || '07:00:00';
+      let endTime = gio_ket_thuc || '09:15:00';
+      if (ca_hoc) {
+        const timeMatch = String(ca_hoc).match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+        if (timeMatch) {
+          startTime = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}:00`;
+          endTime = `${timeMatch[3].padStart(2, '0')}:${timeMatch[4]}:00`;
+        }
+      }
 
       const [result] = await pool.execute(
-        'INSERT INTO buoi_hoc (lop_hoc_phan_id, ngay_hoc, ca_hoc, phong_hoc, ghi_chu) VALUES (?, ?, ?, ?, ?)',
-        [lop_hoc_phan_id, formattedDate, ca_hoc, phong_hoc, ghi_chu || null]
+        'INSERT INTO buoi_hoc (lop_hoc_phan_id, ngay_hoc, ca_hoc, gio_bat_dau, gio_ket_thuc, phong_hoc, ghi_chu) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [lop_hoc_phan_id, formattedDate, String(ca_hoc), startTime, endTime, phong_hoc, ghi_chu || null]
       );
 
       return res.status(201).json({
@@ -166,16 +187,56 @@ const courseController = {
   async updateSession(req, res) {
     try {
       const { id } = req.params;
-      const { ngay_hoc, ca_hoc, phong_hoc, ghi_chu, is_active } = req.body;
+      const { lop_hoc_phan_id, ngay_hoc, ca_hoc, phong_hoc, ghi_chu, is_active, gio_bat_dau, gio_ket_thuc } = req.body;
       if (!ngay_hoc || !ca_hoc || !phong_hoc) {
         return res.status(400).json({ success: false, message: 'Vui lòng nhập đủ ngày học, ca học và phòng học.' });
       }
 
-      const formattedDate = new Date(ngay_hoc).toISOString().split('T')[0];
+      // Chuẩn hóa ngày an toàn tránh lệch múi giờ
+      let formattedDate = ngay_hoc;
+      if (typeof ngay_hoc === 'string' && /^\d{4}-\d{2}-\d{2}/.test(ngay_hoc)) {
+        formattedDate = ngay_hoc.substring(0, 10);
+      } else {
+        const d = new Date(ngay_hoc);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        formattedDate = `${y}-${m}-${day}`;
+      }
+
+      // Trích xuất giờ bắt đầu và kết thúc từ ca_hoc nếu chưa có
+      let startTime = gio_bat_dau || '07:00:00';
+      let endTime = gio_ket_thuc || '09:15:00';
+      if (ca_hoc) {
+        const timeMatch = String(ca_hoc).match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+        if (timeMatch) {
+          startTime = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}:00`;
+          endTime = `${timeMatch[3].padStart(2, '0')}:${timeMatch[4]}:00`;
+        }
+      }
 
       await pool.execute(
-        'UPDATE buoi_hoc SET ngay_hoc = ?, ca_hoc = ?, phong_hoc = ?, ghi_chu = ?, is_active = ? WHERE id = ?',
-        [formattedDate, ca_hoc, phong_hoc, ghi_chu || null, typeof is_active !== 'undefined' ? (is_active ? 1 : 0) : 1, id]
+        `UPDATE buoi_hoc 
+         SET lop_hoc_phan_id = COALESCE(?, lop_hoc_phan_id),
+             ngay_hoc = ?, 
+             ca_hoc = ?, 
+             gio_bat_dau = ?,
+             gio_ket_thuc = ?,
+             phong_hoc = ?, 
+             ghi_chu = ?, 
+             is_active = ? 
+         WHERE id = ?`,
+        [
+          lop_hoc_phan_id || null,
+          formattedDate, 
+          String(ca_hoc),
+          startTime,
+          endTime,
+          phong_hoc, 
+          ghi_chu || null, 
+          typeof is_active !== 'undefined' ? (is_active ? 1 : 0) : 1, 
+          id
+        ]
       );
 
       return res.status(200).json({ success: true, message: 'Cập nhật buổi học thành công!' });

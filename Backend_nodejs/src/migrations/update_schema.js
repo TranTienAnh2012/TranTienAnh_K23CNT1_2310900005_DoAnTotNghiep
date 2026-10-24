@@ -110,7 +110,8 @@ async function migrate() {
     const [existingGv] = await pool.query('SELECT id FROM giang_vien LIMIT 1');
     if (existingGv.length > 0) {
       await pool.query('UPDATE ca_thi SET giang_vien_id = ? WHERE giang_vien_id IS NULL', [existingGv[0].id]);
-    }
+    // Đảm bảo buoi_hoc.ca_hoc là VARCHAR(100) để lưu đúng tên ca học và giờ học
+    await pool.query("ALTER TABLE buoi_hoc MODIFY COLUMN ca_hoc VARCHAR(100) NOT NULL DEFAULT 'Ca 1 (07:00 - 09:15)'");
 
     console.log('Migration completed successfully!');
     process.exit(0);

@@ -11,9 +11,11 @@ router.post('/register-face', upload.single('avatar'), scheduleController.regist
 router.post('/detect-pose', upload.single('frame'), scheduleController.detectPose);
 
 
-// 2. Lịch dạy & Lớp học phần phân công
+// 2. Lịch dạy & Lớp học phần phân công (theo Khoa của Giảng viên)
 router.get('/courses', scheduleController.getMyCourses);
 router.get('/schedule', scheduleController.getMySchedule);
+router.get('/students', scheduleController.getFacultyStudents);
+router.get('/faculty-students', scheduleController.getFacultyStudents);
 
 // 3. Điểm danh buổi học & Manual Override
 router.get('/sessions/:sessionId/attendance', attendanceController.getSessionAttendance);

@@ -79,6 +79,7 @@ async def verify_face(
             is_match=is_matched,
             similarity_score=round(score, 4),
             threshold=threshold,
+            checkin_embedding=checkin_embedding,
             message=msg
         )
     except ValueError as ve:

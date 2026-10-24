@@ -18,17 +18,17 @@ const studentExamController = {
 
       const query = `
         SELECT 
-          svct.id AS registration_id, svct.so_bao_danh, svct.vi_tri_ngoi,
-          svct.thoi_gian_checkin, svct.similarity_score, svct.captured_image_url,
-          svct.trang_thai,
+          dk.id AS registration_id, dk.so_bao_danh, dk.vi_tri_ngoi,
+          dk.thoi_gian_checkin_thi AS thoi_gian_checkin, dk.similarity_score_thi AS similarity_score, dk.captured_image_url_thi AS captured_image_url,
+          dk.trang_thai_thi AS trang_thai,
           ct.id AS ca_thi_id, ct.ngay_thi, ct.gio_bat_dau, ct.gio_ket_thuc, ct.phong_thi, ct.is_active,
           mh.ten_mon, mh.ma_mon, mh.so_tin_chi,
           hk.ten_hoc_ky
-        FROM sinh_vien_ca_thi svct
-        JOIN ca_thi ct ON svct.ca_thi_id = ct.id AND ct.is_deleted = FALSE
+        FROM dang_ky_hoc_phan dk
+        JOIN ca_thi ct ON dk.ca_thi_id = ct.id AND ct.is_deleted = FALSE
         JOIN mon_hoc mh ON ct.mon_hoc_id = mh.id AND mh.is_deleted = FALSE
         JOIN hoc_ky hk ON ct.hoc_ky_id = hk.id AND hk.is_deleted = FALSE
-        WHERE svct.sinh_vien_id = ?
+        WHERE dk.sinh_vien_id = ?
         ORDER BY ct.ngay_thi ASC, ct.gio_bat_dau ASC
       `;
       const [rows] = await pool.execute(query, [studentId]);
@@ -67,7 +67,7 @@ const studentExamController = {
 
       // 2. Kiểm tra xem sinh viên có trong danh sách thí sinh không
       const [candidateRows] = await pool.execute(
-        'SELECT id, so_bao_danh, vi_tri_ngoi, trang_thai FROM sinh_vien_ca_thi WHERE ca_thi_id = ? AND sinh_vien_id = ?',
+        'SELECT id, so_bao_danh, vi_tri_ngoi, trang_thai_thi AS trang_thai FROM dang_ky_hoc_phan WHERE ca_thi_id = ? AND sinh_vien_id = ?',
         [examId, studentId]
       );
       if (candidateRows.length === 0) {
@@ -119,8 +119,8 @@ const studentExamController = {
       if (!aiResult.success || !aiResult.isMatch) {
         // Ghi nhận cảnh báo khả nghi nếu điểm tương đồng quá thấp
         await pool.execute(
-          `UPDATE sinh_vien_ca_thi 
-           SET similarity_score = ?, captured_image_url = ?, trang_thai = 'suspicious' 
+          `UPDATE dang_ky_hoc_phan 
+           SET similarity_score_thi = ?, captured_image_url_thi = ?, trang_thai_thi = 'suspicious' 
            WHERE ca_thi_id = ? AND sinh_vien_id = ?`,
           [aiResult.similarity, capturedRelativeUrl, examId, studentId]
         );
@@ -138,8 +138,8 @@ const studentExamController = {
       // 6. Check-in phòng thi thành công
       const checkinTime = new Date();
       await pool.execute(
-        `UPDATE sinh_vien_ca_thi 
-         SET thoi_gian_checkin = ?, similarity_score = ?, captured_image_url = ?, trang_thai = 'checkin'
+        `UPDATE dang_ky_hoc_phan 
+         SET thoi_gian_checkin_thi = ?, similarity_score_thi = ?, captured_image_url_thi = ?, trang_thai_thi = 'checkin'
          WHERE ca_thi_id = ? AND sinh_vien_id = ?`,
         [checkinTime, aiResult.similarity, capturedRelativeUrl, examId, studentId]
       );

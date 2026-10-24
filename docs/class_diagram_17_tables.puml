@@ -1,0 +1,340 @@
+@startuml SmartEdu_ClassDiagram_17Tables
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+title SMARTEDU - UML CLASS DIAGRAM (17 BẢNG CƠ SỞ DỮ LIỆU HIỆN TẠI)
+
+class "users" as users {
+  - id : int
+  - username : varchar(50)
+  - password_hash : varchar(255)
+  - role : enum('admin','faculty_manager','teacher','student')
+  - is_active : boolean
+  - is_deleted : boolean
+  - created_at : datetime
+  - updated_at : datetime
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "khoa" as khoa {
+  - id : int
+  - ma_khoa : varchar(20)
+  - ten_khoa : varchar(100)
+  - so_dien_thoai : varchar(20)
+  - email : varchar(100)
+  - van_phong : varchar(100)
+  - truong_khoa : varchar(100)
+  - don_gia_tin_chi : decimal
+  - hoc_phi_ky_chuan : decimal
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "quan_ly_khoa" as quan_ly_khoa {
+  - id : int
+  - user_id : int
+  - khoa_id : int
+  - ma_can_bo : varchar(20)
+  - ho_ten : varchar(100)
+  - email : varchar(100)
+  - so_dien_thoai : varchar(20)
+  - chuc_vu : varchar(50)
+  - avatar_url : varchar(255)
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "giang_vien" as giang_vien {
+  - id : int
+  - user_id : int
+  - khoa_id : int
+  - ma_gv : varchar(20)
+  - ho_ten : varchar(100)
+  - email : varchar(100)
+  - so_dien_thoai : varchar(20)
+  - hoc_ham_hoc_vi : varchar(50)
+  - chuc_vu : enum('GiangVien','GiaoVu','PhoKhoa','TruongKhoa')
+  - chuyen_mon : varchar(150)
+  - avatar_url : varchar(255)
+  - face_embedding : text/json
+  - face_updated_at : timestamp
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "lop" as lop {
+  - id : int
+  - khoa_id : int
+  - ma_lop : varchar(30)
+  - ten_lop : varchar(100)
+  - ma_nganh : varchar(20)
+  - ten_nganh : varchar(100)
+  - khoa_hoc : varchar(20)
+  - he_dao_tao : varchar(50)
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "sinh_vien" as sinh_vien {
+  - id : int
+  - user_id : int
+  - lop_id : int
+  - ma_sv : varchar(20)
+  - ho_ten : varchar(100)
+  - ngay_sinh : date
+  - gioi_tinh : enum('Nam','Nu','Khac')
+  - email : varchar(100)
+  - so_dien_thoai : varchar(20)
+  - so_cmnd_cccd : varchar(20)
+  - que_quan : varchar(150)
+  - avatar_url : varchar(255)
+  - face_embedding : text/json
+  - face_updated_at : timestamp
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "nganh_hoc" as nganh_hoc {
+  - id : int
+  - khoa_id : int
+  - ma_nganh : varchar(20)
+  - ten_nganh : varchar(100)
+  - thoi_gian_dao_tao_nam : int
+  - tong_tin_chi_yeu_cau : int
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "chuong_trinh_dao_tao" as chuong_trinh_dao_tao {
+  - id : int
+  - khoa_id : int
+  - nganh_hoc_id : int
+  - ma_ctdt : varchar(50)
+  - ten_ctdt : varchar(255)
+  - khoa_tuyen_sinh : varchar(20)
+  - he_dao_tao : varchar(50)
+  - chuyen_nganh : varchar(100)
+  - tong_tin_chi_yeu_cau : int
+  - nam_ban_hanh : int
+  - quyet_dinh_ban_hanh : varchar(100)
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "ctdt_hoc_phan" as ctdt_hoc_phan {
+  - id : int
+  - chuong_trinh_dao_tao_id : int
+  - mon_hoc_id : int
+  - hoc_ky_goi_y : int
+  - khoi_kien_thuc : enum
+  - loai_hoc_phan : enum('BatBuoc','TuChon')
+  - so_tiet : int
+  - mon_tien_quyet_id : int
+  - mon_song_hanh_id : int
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "mon_hoc" as mon_hoc {
+  - id : int
+  - khoa_id : int
+  - ma_mon : varchar(20)
+  - ten_mon : varchar(150)
+  - so_tin_chi : int
+  - so_buoi_hoc : tinyint
+  - so_tiet : int
+  - loai_mon : enum('LyThuyet','ThucHanh','DoAn')
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "hoc_ky" as hoc_ky {
+  - id : int
+  - ma_hoc_ky : varchar(20)
+  - ten_hoc_ky : varchar(50)
+  - nam_hoc : varchar(20)
+  - ngay_bat_dau : date
+  - ngay_ket_thuc : date
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "lop_hoc_phan" as lop_hoc_phan {
+  - id : int
+  - mon_hoc_id : int
+  - hoc_ky_id : int
+  - giang_vien_id : int
+  - ma_lhp : varchar(50)
+  - ten_lhp : varchar(150)
+  - phong_hoc_mac_dinh : varchar(50)
+  - so_luong_toi_da : int
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "dang_ky_hoc_phan" as dang_ky_hoc_phan {
+  - id : int
+  - sinh_vien_id : int
+  - lop_hoc_phan_id : int
+  - ca_thi_id : int
+  - ngay_dang_ky : timestamp
+  - dieu_kien_du_thi : boolean
+  - diem_chuyen_can : float
+  - diem_giua_ky : float
+  - diem_cuoi_ky : float
+  - diem_tong_ket_he10 : float
+  - diem_tong_ket_he4 : float
+  - diem_chu : varchar(5)
+  - ket_qua : enum('ChuaXet','Dat','KhongDat')
+  - so_bao_danh : varchar(20)
+  - vi_tri_ngoi : varchar(50)
+  - thoi_gian_checkin_thi : datetime
+  - similarity_score_thi : float
+  - captured_image_url_thi : varchar(255)
+  - trang_thai_thi : enum
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "buoi_hoc" as buoi_hoc {
+  - id : int
+  - lop_hoc_phan_id : int
+  - ngay_hoc : date
+  - ca_hoc : varchar(100)
+  - gio_bat_dau : time
+  - gio_ket_thuc : time
+  - phong_hoc : varchar(50)
+  - chu_de_bai_hoc : varchar(255)
+  - trang_thai_diem_danh : enum
+  - ghi_chu : text
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "lich_su_diem_danh" as lich_su_diem_danh {
+  - id : bigint
+  - buoi_hoc_id : int
+  - sinh_vien_id : int
+  - thoi_gian_checkin : datetime
+  - similarity_score : float
+  - captured_image_url : varchar(255)
+  - trang_thai : enum('Present','Late','Absent')
+  - phuong_thuc : enum('FaceAI','Manual_Override')
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "ca_thi" as ca_thi {
+  - id : int
+  - mon_hoc_id : int
+  - hoc_ky_id : int
+  - giang_vien_id : int
+  - ngay_thi : date
+  - gio_bat_dau : time
+  - gio_ket_thuc : time
+  - phong_thi : varchar(50)
+  - is_active : boolean
+  + Create()
+  + Update()
+  + Delete()
+}
+
+class "cong_no_hoc_phi" as cong_no_hoc_phi {
+  - id : bigint
+  - sinh_vien_id : int
+  - hoc_ky_id : int
+  - khoan_thu : varchar(100)
+  - dot : int
+  - hoc_ky_nien_khoa : varchar(20)
+  - nam_hoc_nien_khoa : varchar(30)
+  - tong_tin_chi_dang_ky : int
+  - tong_hoc_phi_phai_nop : decimal
+  - so_tien_mien_giam : decimal
+  - so_tien_da_dong : decimal
+  - so_tien_con_no : decimal
+  - han_chot_nop : date
+  - trang_thai : enum
+  - ngay_nop_tien : datetime
+  - so_bien_lai : varchar(100)
+  + Create()
+  + Update()
+  + Delete()
+}
+
+' Quan hệ Users (1 - 1)
+users "1" -- "1" quan_ly_khoa : user_id
+users "1" -- "1" giang_vien : user_id
+users "1" -- "1" sinh_vien : user_id
+
+' Quan hệ Khoa (1 - N)
+khoa "1" -- "0..*" quan_ly_khoa : khoa_id
+khoa "1" -- "0..*" giang_vien : khoa_id
+khoa "1" -- "0..*" lop : khoa_id
+khoa "1" -- "0..*" nganh_hoc : khoa_id
+khoa "1" -- "0..*" chuong_trinh_dao_tao : khoa_id
+khoa "1" -- "0..*" mon_hoc : khoa_id
+
+' Phân hệ CTĐT
+nganh_hoc "1" -- "0..*" chuong_trinh_dao_tao : nganh_hoc_id
+chuong_trinh_dao_tao "1" -- "1..*" ctdt_hoc_phan : chuong_trinh_dao_tao_id
+mon_hoc "1" -- "0..*" ctdt_hoc_phan : mon_hoc_id
+mon_hoc "1" -- "0..*" ctdt_hoc_phan : mon_tien_quyet_id
+
+' Lớp sinh hoạt
+lop "1" -- "0..*" sinh_vien : lop_id
+
+' Lớp học phần
+mon_hoc "1" -- "0..*" lop_hoc_phan : mon_hoc_id
+hoc_ky "1" -- "0..*" lop_hoc_phan : hoc_ky_id
+giang_vien "1" -- "0..*" lop_hoc_phan : giang_vien_id
+
+' Đăng ký học phần (N - M)
+sinh_vien "1" -- "0..*" dang_ky_hoc_phan : sinh_vien_id
+lop_hoc_phan "1" -- "0..*" dang_ky_hoc_phan : lop_hoc_phan_id
+
+' Buổi học & Face AI
+lop_hoc_phan "1" -- "1..*" buoi_hoc : lop_hoc_phan_id
+buoi_hoc "1" -- "0..*" lich_su_diem_danh : buoi_hoc_id
+sinh_vien "1" -- "0..*" lich_su_diem_danh : sinh_vien_id
+
+' Ca thi & Điểm số
+mon_hoc "1" -- "0..*" ca_thi : mon_hoc_id
+hoc_ky "1" -- "0..*" ca_thi : hoc_ky_id
+giang_vien "1" -- "0..*" ca_thi : giang_vien_id
+ca_thi "1" -- "0..*" dang_ky_hoc_phan : ca_thi_id
+
+' Học phí & Công nợ
+sinh_vien "1" -- "0..*" cong_no_hoc_phi : sinh_vien_id
+hoc_ky "1" -- "0..*" cong_no_hoc_phi : hoc_ky_id
+
+@enduml

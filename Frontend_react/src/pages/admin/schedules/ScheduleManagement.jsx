@@ -41,12 +41,48 @@ export default function ScheduleManagement() {
   const [selectedDate, setSelectedDate] = useState(searchParams.get('date') || '');
   const [selectedSemesterId, setSelectedSemesterId] = useState('all');
 
+  // Các ca học chuẩn tiêu chuẩn của trường
+  const STANDARD_SHIFTS = [
+    { label: 'Ca 1 (07:00 - 09:15)', name: 'Ca 1', start: '07:00', end: '09:15' },
+    { label: 'Ca 1b (07:30 - 10:00)', name: 'Ca 1b', start: '07:30', end: '10:00' },
+    { label: 'Ca 2 (09:15 - 11:45)', name: 'Ca 2', start: '09:15', end: '11:45' },
+    { label: 'Ca 2b (09:30 - 11:45)', name: 'Ca 2b', start: '09:30', end: '11:45' },
+    { label: 'Ca 2c (10:00 - 12:30)', name: 'Ca 2c', start: '10:00', end: '12:30' },
+    { label: 'Ca 3 (13:00 - 15:15)', name: 'Ca 3', start: '13:00', end: '15:15' },
+    { label: 'Ca 3b (13:30 - 15:30)', name: 'Ca 3b', start: '13:30', end: '15:30' },
+    { label: 'Ca 4 (15:00 - 17:45)', name: 'Ca 4', start: '15:00', end: '17:45' },
+    { label: 'Ca 4b (15:30 - 17:45)', name: 'Ca 4b', start: '15:30', end: '17:45' },
+    { label: 'Ca 5 (18:00 - 20:15)', name: 'Ca 5', start: '18:00', end: '20:15' }
+  ];
+
+  const extractTimeFromCaHoc = (caHocStr) => {
+    let start = '07:00';
+    let end = '09:15';
+    if (caHocStr) {
+      const match = String(caHocStr).match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+      if (match) {
+        start = `${match[1].padStart(2, '0')}:${match[2]}`;
+        end = `${match[3].padStart(2, '0')}:${match[4]}`;
+      }
+    }
+    return { start, end };
+  };
+
+  const formatCaHoc = (caHoc) => {
+    if (!caHoc || caHoc === 0 || caHoc === '0') {
+      return 'Ca 1 (07:00 - 09:15)';
+    }
+    return String(caHoc);
+  };
+
   // Modal Thêm buổi học
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
     lop_hoc_phan_id: '',
     ngay_hoc: new Date().toISOString().split('T')[0],
-    ca_hoc: '',
+    ca_hoc: 'Ca 1 (07:00 - 09:15)',
+    gio_bat_dau: '07:00',
+    gio_ket_thuc: '09:15',
     phong_hoc: '',
     ghi_chu: ''
   });
@@ -58,15 +94,20 @@ export default function ScheduleManagement() {
     ngay_bat_dau: new Date().toISOString().split('T')[0],
     thu_trong_tuan: 2, // Thứ 2
     so_buoi: '',
-    ca_hoc: '',
+    ca_hoc: 'Ca 1 (07:00 - 09:15)',
+    gio_bat_dau: '07:00',
+    gio_ket_thuc: '09:15',
     phong_hoc: ''
   });
 
   // Modal Sửa buổi học
   const [editSession, setEditSession] = useState(null);
   const [editForm, setEditForm] = useState({
+    lop_hoc_phan_id: '',
     ngay_hoc: '',
-    ca_hoc: '',
+    ca_hoc: 'Ca 1 (07:00 - 09:15)',
+    gio_bat_dau: '07:00',
+    gio_ket_thuc: '09:15',
     phong_hoc: '',
     ghi_chu: '',
     is_active: true
@@ -197,9 +238,15 @@ export default function ScheduleManagement() {
 
   const handleOpenEdit = (session) => {
     setEditSession(session);
+    const { start, end } = extractTimeFromCaHoc(session.ca_hoc);
+    const dateFormatted = session.ngay_hoc ? String(session.ngay_hoc).substring(0, 10) : '';
+
     setEditForm({
-      ngay_hoc: session.ngay_hoc ? session.ngay_hoc.split('T')[0] : '',
-      ca_hoc: session.ca_hoc || '',
+      lop_hoc_phan_id: session.lop_hoc_phan_id || '',
+      ngay_hoc: dateFormatted,
+      ca_hoc: session.ca_hoc || 'Ca 1 (07:00 - 09:15)',
+      gio_bat_dau: start,
+      gio_ket_thuc: end,
       phong_hoc: session.phong_hoc || '',
       ghi_chu: session.ghi_chu || '',
       is_active: Boolean(session.is_active)
@@ -248,7 +295,7 @@ export default function ScheduleManagement() {
             </div>
             <div style={{ fontSize: '0.78rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
               <Clock size={12} />
-              {row.ca_hoc}
+              {formatCaHoc(row.ca_hoc)}
             </div>
           </div>
         );
@@ -404,7 +451,7 @@ export default function ScheduleManagement() {
         </div>
         <div>
           <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>
-            {new Date(row.ngay_hoc).toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })} • {row.ca_hoc}
+            {new Date(row.ngay_hoc).toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })} • {formatCaHoc(row.ca_hoc)}
           </div>
           <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '3px' }}>
             Lớp: <strong style={{ color: '#1e293b' }}>{row.ten_lhp}</strong> ({row.ma_lhp}) • Phòng: <strong>{row.phong_hoc}</strong>
@@ -513,7 +560,7 @@ export default function ScheduleManagement() {
                 Ca học:
               </span>
               <span className="font-semibold text-slate-800">
-                {row.ca_hoc}
+                {formatCaHoc(row.ca_hoc)}
               </span>
             </div>
 
@@ -772,8 +819,19 @@ export default function ScheduleManagement() {
         title="Thêm Buổi học vào Lịch trình"
       >
         <form onSubmit={handleCreateSession} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Datalist phòng học dùng chung */}
+          <datalist id="common-schedule-rooms">
+            <option value="P401" />
+            <option value="P402" />
+            <option value="P.502" />
+            <option value="Lab 302" />
+            <option value="Hội Trường T4" />
+            <option value="B402 - Phòng học 402" />
+            <option value="A205 - Phòng lý thuyết 205" />
+          </datalist>
+
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
               Lớp học phần *
             </label>
             <select
@@ -788,7 +846,7 @@ export default function ScheduleManagement() {
                   phong_hoc: foundCourse?.phong_hoc_mac_dinh || createForm.phong_hoc
                 });
               }}
-              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
               <option value="">-- Chọn lớp học phần --</option>
               {courses.map((c) => (
@@ -799,9 +857,9 @@ export default function ScheduleManagement() {
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
                 Ngày học *
               </label>
               <input
@@ -809,66 +867,125 @@ export default function ScheduleManagement() {
                 required
                 value={createForm.ngay_hoc}
                 onChange={(e) => setCreateForm({ ...createForm, ngay_hoc: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Ca học *
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Ca học mẫu
               </label>
               <select
-                value={createForm.ca_hoc}
-                onChange={(e) => setCreateForm({ ...createForm, ca_hoc: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                value={STANDARD_SHIFTS.some(s => s.label === createForm.ca_hoc) ? createForm.ca_hoc : 'custom'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val !== 'custom') {
+                    const shift = STANDARD_SHIFTS.find(s => s.label === val);
+                    if (shift) {
+                      setCreateForm({
+                        ...createForm,
+                        ca_hoc: shift.label,
+                        gio_bat_dau: shift.start,
+                        gio_ket_thuc: shift.end
+                      });
+                    }
+                  }
+                }}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
-                <option value="Ca 1 (07:00 - 09:15)">Ca 1 (07:00 - 09:15)</option>
-                <option value="Ca 2 (09:30 - 11:45)">Ca 2 (09:30 - 11:45)</option>
-                <option value="Ca 3 (13:00 - 15:15)">Ca 3 (13:00 - 15:15)</option>
-                <option value="Ca 4 (15:30 - 17:45)">Ca 4 (15:30 - 17:45)</option>
-                <option value="Ca 5 (18:00 - 20:15)">Ca 5 (18:00 - 20:15)</option>
+                {STANDARD_SHIFTS.map((s, idx) => (
+                  <option key={idx} value={s.label}>
+                    {s.label}
+                  </option>
+                ))}
+                <option value="custom">⚙️ Tùy chỉnh giờ...</option>
               </select>
             </div>
           </div>
 
+          {/* Ô điều chỉnh Giờ Bắt Đầu - Giờ Kết Thúc linh hoạt */}
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+            <span className="text-[11px] font-bold text-slate-600 block">
+              Khung giờ học thực tế (Bắt đầu - Kết thúc):
+            </span>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                  Giờ bắt đầu
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={createForm.gio_bat_dau}
+                  onChange={(e) => {
+                    const newStart = e.target.value;
+                    const newCa = `Ca (${newStart} - ${createForm.gio_ket_thuc})`;
+                    setCreateForm({ ...createForm, gio_bat_dau: newStart, ca_hoc: newCa });
+                  }}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-mono font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                  Giờ kết thúc
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={createForm.gio_ket_thuc}
+                  onChange={(e) => {
+                    const newEnd = e.target.value;
+                    const newCa = `Ca (${createForm.gio_bat_dau} - ${newEnd})`;
+                    setCreateForm({ ...createForm, gio_ket_thuc: newEnd, ca_hoc: newCa });
+                  }}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-mono font-semibold"
+                />
+              </div>
+            </div>
+            <div className="text-[11px] font-mono text-slate-600">
+              Định dạng lưu: <strong className="text-blue-700">{createForm.ca_hoc}</strong>
+            </div>
+          </div>
+
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
               Phòng học *
             </label>
             <input
               type="text"
               required
-              placeholder="vd: P.301 - Giảng đường A"
+              list="common-schedule-rooms"
+              placeholder="vd: P.502 hoặc B402 - Phòng học 402"
               value={createForm.phong_hoc}
               onChange={(e) => setCreateForm({ ...createForm, phong_hoc: e.target.value })}
-              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
               Ghi chú nội dung buổi học
             </label>
             <input
               type="text"
-              placeholder="vd: Bài 1: Giới thiệu tổng quan..."
+              placeholder="vd: Buổi 1: Giới thiệu đề cương môn học..."
               value={createForm.ghi_chu}
               onChange={(e) => setCreateForm({ ...createForm, ghi_chu: e.target.value })}
-              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(false)}
-              style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontWeight: 600 }}
+              className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
-              style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+              className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
             >
               Thêm Buổi học
             </button>
@@ -882,13 +999,13 @@ export default function ScheduleManagement() {
         onClose={() => setIsBulkModalOpen(false)}
         title="Tạo Lịch Học Tự Động Theo Tuần (Batch Scheduler)"
       >
-        <form onSubmit={handleBulkCreate} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ background: '#f0fdf4', padding: '12px 14px', borderRadius: '8px', border: '1px solid #bbf7d0', color: '#166534', fontSize: '0.82rem' }}>
+        <form onSubmit={handleBulkCreate} className="space-y-4">
+          <div className="bg-emerald-50/80 p-3 rounded-xl border border-emerald-200 text-emerald-800 text-xs">
             💡 Hệ thống sẽ tự động tính toán và sinh ra các buổi học cố định theo tuần kể từ ngày bắt đầu.
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
               Lớp học phần *
             </label>
             <select
@@ -904,7 +1021,7 @@ export default function ScheduleManagement() {
                   phong_hoc: foundCourse?.phong_hoc_mac_dinh || bulkForm.phong_hoc
                 });
               }}
-              style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
               <option value="">-- Chọn lớp học phần --</option>
               {courses.map((c) => (
@@ -915,9 +1032,9 @@ export default function ScheduleManagement() {
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
                 Ngày bắt đầu buổi đầu tiên *
               </label>
               <input
@@ -925,12 +1042,12 @@ export default function ScheduleManagement() {
                 required
                 value={bulkForm.ngay_bat_dau}
                 onChange={(e) => setBulkForm({ ...bulkForm, ngay_bat_dau: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
                 Tổng số buổi cần tạo *
               </label>
               <input
@@ -940,55 +1057,114 @@ export default function ScheduleManagement() {
                 required
                 value={bulkForm.so_buoi}
                 onChange={(e) => setBulkForm({ ...bulkForm, so_buoi: parseInt(e.target.value) || 15 })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Ca học cố định *
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Ca học mẫu cố định *
               </label>
               <select
-                value={bulkForm.ca_hoc}
-                onChange={(e) => setBulkForm({ ...bulkForm, ca_hoc: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                value={STANDARD_SHIFTS.some(s => s.label === bulkForm.ca_hoc) ? bulkForm.ca_hoc : 'custom'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val !== 'custom') {
+                    const shift = STANDARD_SHIFTS.find(s => s.label === val);
+                    if (shift) {
+                      setBulkForm({
+                        ...bulkForm,
+                        ca_hoc: shift.label,
+                        gio_bat_dau: shift.start,
+                        gio_ket_thuc: shift.end
+                      });
+                    }
+                  }
+                }}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
-                <option value="Ca 1 (07:00 - 09:15)">Ca 1 (07:00 - 09:15)</option>
-                <option value="Ca 2 (09:30 - 11:45)">Ca 2 (09:30 - 11:45)</option>
-                <option value="Ca 3 (13:00 - 15:15)">Ca 3 (13:00 - 15:15)</option>
-                <option value="Ca 4 (15:30 - 17:45)">Ca 4 (15:30 - 17:45)</option>
-                <option value="Ca 5 (18:00 - 20:15)">Ca 5 (18:00 - 20:15)</option>
+                {STANDARD_SHIFTS.map((s, idx) => (
+                  <option key={idx} value={s.label}>
+                    {s.label}
+                  </option>
+                ))}
+                <option value="custom">⚙️ Tùy chỉnh giờ...</option>
               </select>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
                 Phòng học *
               </label>
               <input
                 type="text"
                 required
+                list="common-schedule-rooms"
                 value={bulkForm.phong_hoc}
                 onChange={(e) => setBulkForm({ ...bulkForm, phong_hoc: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
+          {/* Ô Giờ bắt đầu - Giờ kết thúc cho Bulk */}
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+            <span className="text-[11px] font-bold text-slate-600 block">
+              Khung giờ các ca học tạo tự động:
+            </span>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                  Giờ bắt đầu
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={bulkForm.gio_bat_dau}
+                  onChange={(e) => {
+                    const newStart = e.target.value;
+                    const newCa = `Ca (${newStart} - ${bulkForm.gio_ket_thuc})`;
+                    setBulkForm({ ...bulkForm, gio_bat_dau: newStart, ca_hoc: newCa });
+                  }}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-mono font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                  Giờ kết thúc
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={bulkForm.gio_ket_thuc}
+                  onChange={(e) => {
+                    const newEnd = e.target.value;
+                    const newCa = `Ca (${bulkForm.gio_bat_dau} - ${newEnd})`;
+                    setBulkForm({ ...bulkForm, gio_ket_thuc: newEnd, ca_hoc: newCa });
+                  }}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-mono font-semibold"
+                />
+              </div>
+            </div>
+            <div className="text-[11px] font-mono text-slate-600">
+              Ca học tạo hàng tuần: <strong className="text-emerald-700">{bulkForm.ca_hoc}</strong>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setIsBulkModalOpen(false)}
-              style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontWeight: 600 }}
+              className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={loading}
-              style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#16a34a', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+              className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
             >
               {loading ? 'Đang tạo...' : `Khởi tạo ${bulkForm.so_buoi} buổi học`}
             </button>
@@ -996,22 +1172,36 @@ export default function ScheduleManagement() {
         </form>
       </Modal>
 
-      {/* Modal Sửa Buổi Học */}
+      {/* Modal Sửa Buổi Học Thông Minh */}
       {editSession && (
         <Modal
           isOpen={Boolean(editSession)}
           onClose={() => setEditSession(null)}
-          title="Chỉnh sửa Buổi học"
+          title={`Chỉnh sửa Buổi học #${editSession.id}`}
         >
-          <form onSubmit={handleUpdateSession} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem' }}>
-              <div>Lớp: <strong>{editSession.ten_lhp}</strong> ({editSession.ma_lhp})</div>
-              <div style={{ color: '#64748b', marginTop: '2px' }}>Môn học: {editSession.ten_mon}</div>
+          <form onSubmit={handleUpdateSession} className="space-y-4">
+            {/* Lớp học phần có thể thay đổi */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Lớp học phần phụ trách *
+              </label>
+              <select
+                required
+                value={editForm.lop_hoc_phan_id}
+                onChange={(e) => setEditForm({ ...editForm, lop_hoc_phan_id: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.ma_lhp} - {c.ten_lhp} ({c.ten_mon})
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Ngày học *
                 </label>
                 <input
@@ -1019,78 +1209,148 @@ export default function ScheduleManagement() {
                   required
                   value={editForm.ngay_hoc}
                   onChange={(e) => setEditForm({ ...editForm, ngay_hoc: e.target.value })}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Ca học *
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Ca học mẫu
                 </label>
                 <select
-                  value={editForm.ca_hoc}
-                  onChange={(e) => setEditForm({ ...editForm, ca_hoc: e.target.value })}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  value={STANDARD_SHIFTS.some(s => s.label === editForm.ca_hoc) ? editForm.ca_hoc : 'custom'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val !== 'custom') {
+                      const shift = STANDARD_SHIFTS.find(s => s.label === val);
+                      if (shift) {
+                        setEditForm({
+                          ...editForm,
+                          ca_hoc: shift.label,
+                          gio_bat_dau: shift.start,
+                          gio_ket_thuc: shift.end
+                        });
+                      }
+                    }
+                  }}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
-                  <option value="Ca 1 (07:00 - 09:15)">Ca 1 (07:00 - 09:15)</option>
-                  <option value="Ca 2 (09:30 - 11:45)">Ca 2 (09:30 - 11:45)</option>
-                  <option value="Ca 3 (13:00 - 15:15)">Ca 3 (13:00 - 15:15)</option>
-                  <option value="Ca 4 (15:30 - 17:45)">Ca 4 (15:30 - 17:45)</option>
-                  <option value="Ca 5 (18:00 - 20:15)">Ca 5 (18:00 - 20:15)</option>
+                  {/* Nếu ca_hoc hiện tại chưa có trong mẫu chuẩn, giữ nguyên để không bị đổi sang Ca 1 */}
+                  {!STANDARD_SHIFTS.some(s => s.label === editForm.ca_hoc) && editForm.ca_hoc && (
+                    <option value={editForm.ca_hoc}>
+                      ★ {editForm.ca_hoc} (Hiện tại)
+                    </option>
+                  )}
+                  <optgroup label="Danh sách ca học chuẩn">
+                    {STANDARD_SHIFTS.map((s, idx) => (
+                      <option key={idx} value={s.label}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <option value="custom">⚙️ Tự do tùy chỉnh giờ (Custom)...</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Ô tinh chỉnh Giờ Bắt Đầu - Giờ Kết Thúc */}
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+              <span className="text-[11px] font-bold text-slate-600 block">
+                Khung giờ buổi học (Giờ bắt đầu - Giờ kết thúc):
+              </span>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                    Giờ bắt đầu
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={editForm.gio_bat_dau}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      const newCa = `Ca (${newStart} - ${editForm.gio_ket_thuc})`;
+                      setEditForm({ ...editForm, gio_bat_dau: newStart, ca_hoc: newCa });
+                    }}
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-mono font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                    Giờ kết thúc
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={editForm.gio_ket_thuc}
+                    onChange={(e) => {
+                      const newEnd = e.target.value;
+                      const newCa = `Ca (${editForm.gio_bat_dau} - ${newEnd})`;
+                      setEditForm({ ...editForm, gio_ket_thuc: newEnd, ca_hoc: newCa });
+                    }}
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-mono font-semibold"
+                  />
+                </div>
+              </div>
+              <div className="text-[11px] font-mono text-slate-600">
+                Ca học cập nhật: <strong className="text-blue-700">{editForm.ca_hoc}</strong>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Phòng học *
+                </label>
+                <input
+                  type="text"
+                  required
+                  list="common-schedule-rooms"
+                  value={editForm.phong_hoc}
+                  onChange={(e) => setEditForm({ ...editForm, phong_hoc: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Cổng điểm danh Face AI
+                </label>
+                <select
+                  value={editForm.is_active ? '1' : '0'}
+                  onChange={(e) => setEditForm({ ...editForm, is_active: e.target.value === '1' })}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="1">🟢 Mở cổng điểm danh</option>
+                  <option value="0">🔒 Khóa cổng điểm danh</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Phòng học *
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Ghi chú nội dung buổi học
               </label>
               <input
                 type="text"
-                required
-                value={editForm.phong_hoc}
-                onChange={(e) => setEditForm({ ...editForm, phong_hoc: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Ghi chú nội dung
-              </label>
-              <input
-                type="text"
+                placeholder="vd: Buổi 2: Kiểm tra giữa kỳ / Thuyết trình nhóm..."
                 value={editForm.ghi_chu}
                 onChange={(e) => setEditForm({ ...editForm, ghi_chu: e.target.value })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Trạng thái cổng điểm danh Face AI
-              </label>
-              <select
-                value={editForm.is_active ? '1' : '0'}
-                onChange={(e) => setEditForm({ ...editForm, is_active: e.target.value === '1' })}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
-              >
-                <option value="1">Mở cổng điểm danh</option>
-                <option value="0">Khóa cổng điểm danh</option>
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setEditSession(null)}
-                style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontWeight: 600 }}
+                className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
               >
                 Hủy
               </button>
               <button
                 type="submit"
-                style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
               >
                 Lưu Thay Đổi
               </button>
@@ -1122,7 +1382,7 @@ export default function ScheduleManagement() {
                 <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>
                   {new Date(detailSession.ngay_hoc).toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </span>
-                <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: '2px' }}>{detailSession.ca_hoc}</div>
+                <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: '2px' }}>{formatCaHoc(detailSession.ca_hoc)}</div>
               </div>
 
               <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px' }}>
